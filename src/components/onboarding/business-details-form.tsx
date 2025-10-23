@@ -97,33 +97,31 @@ export function BusinessDetailsForm() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const { data, error } = await supabase
-        .from('projects')
-        .insert({
-          user_id: user.id,
+      // Call API route to save project (bypasses RLS)
+      const response = await fetch('/api/save-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: formData.businessName,
           website_url: formData.websiteUrl,
           country: formData.country,
           language: formData.language,
           description: formData.description,
-          status: 'active',
-        })
-        .select()
-        .single();
+        }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save');
+      }
+
+      const data = await response.json();
 
       router.push('/dashboard');
       router.refresh();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating project:', error);
-      setErrors({ businessName: 'Failed to save business details. Please try again.' });
+      setErrors({ businessName: error.message || 'Failed to save business details. Please try again.' });
     } finally {
       setLoading(false);
     }

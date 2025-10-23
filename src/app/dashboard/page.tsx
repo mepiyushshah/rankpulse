@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -157,6 +158,14 @@ export default function DashboardPage() {
   }
 
   // Regular dashboard content for users with projects
+  return (
+    <DashboardLayout>
+      <Content />
+    </DashboardLayout>
+  );
+}
+
+function Content() {
   // Mock data - will be replaced with real data from Supabase
   const stats = [
     {

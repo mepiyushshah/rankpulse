@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea, Select } from '@/components/ui/input';
@@ -91,6 +92,7 @@ export default function GenerateContentPage() {
   };
 
   return (
+    <DashboardLayout>
     <div className="p-8">
       {/* Header */}
       <div className="mb-8">
@@ -276,5 +278,6 @@ export default function GenerateContentPage() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }
