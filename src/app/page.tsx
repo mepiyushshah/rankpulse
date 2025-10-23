@@ -17,7 +17,7 @@ export default function Home() {
             </p>
             <div className="flex gap-4 justify-center">
               <a
-                href="/onboarding"
+                href="/auth/signup"
                 className="px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors shadow-lg hover:shadow-xl"
               >
                 Get Started Free
@@ -149,7 +149,7 @@ export default function Home() {
             Join thousands of content creators using RankPulse to automate their SEO workflow
           </p>
           <a
-            href="/onboarding"
+            href="/auth/signup"
             className="inline-block px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors shadow-lg hover:shadow-xl"
           >
             Start Creating Content Free

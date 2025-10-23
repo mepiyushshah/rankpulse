@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -26,30 +25,43 @@ export default function DashboardPage() {
 
   const checkProjects = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      console.log('User check:', { user: user?.id, userError });
+
+      if (userError) {
+        console.error('User error:', userError);
+        router.push('/auth/login');
+        return;
+      }
+
       if (!user) {
+        console.log('No user found, redirecting to login');
         router.push('/auth/login');
         return;
       }
 
       const { data: projects, error } = await supabase
         .from('projects')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1);
+        .select('*')
+        .eq('user_id', user.id);
+
+      console.log('Projects fetch result:', { projects, error, count: projects?.length });
 
       if (error) {
         console.error('Error fetching projects:', error);
-        // If there's an error, assume no projects and show onboarding
-        setHasProjects(false);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        // On error, default to true to show dashboard instead of onboarding
+        setHasProjects(true);
       } else {
         const hasProjectsValue = projects && projects.length > 0;
-        console.log('Projects check:', { projects, hasProjectsValue });
+        console.log('Projects check final:', { hasProjectsValue, projectCount: projects?.length });
         setHasProjects(hasProjectsValue);
       }
     } catch (error) {
-      console.error('Error checking projects:', error);
-      setHasProjects(false); // Default to showing onboarding on error
+      console.error('Catch block - Error checking projects:', error);
+      // On error, default to true to show dashboard
+      setHasProjects(true);
     } finally {
       setLoading(false);
     }
@@ -158,11 +170,7 @@ export default function DashboardPage() {
   }
 
   // Regular dashboard content for users with projects
-  return (
-    <DashboardLayout>
-      <Content />
-    </DashboardLayout>
-  );
+  return <Content />;
 }
 
 function Content() {
