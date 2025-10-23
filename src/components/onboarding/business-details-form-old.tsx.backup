@@ -1,0 +1,322 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input, Textarea, Select } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { COUNTRIES, LANGUAGES } from '@/lib/constants';
+import { extractWebsiteMetadata } from '@/lib/metadata-extractor';
+import { supabase } from '@/lib/supabase';
+
+type FormData = {
+  businessName: string;
+  websiteUrl: string;
+  country: string;
+  language: string;
+  description: string;
+};
+
+type FormErrors = Partial<Record<keyof FormData, string>>;
+
+export function BusinessDetailsForm() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    businessName: '',
+    websiteUrl: '',
+    country: 'US',
+    language: 'en',
+    description: '',
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const updateField = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user types
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.businessName.trim()) {
+      newErrors.businessName = 'Business name is required';
+    }
+
+    if (!formData.websiteUrl.trim()) {
+      newErrors.websiteUrl = 'Website URL is required';
+    } else {
+      // Basic URL validation
+      const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+      if (!urlPattern.test(formData.websiteUrl)) {
+        newErrors.websiteUrl = 'Please enter a valid website URL';
+      }
+    }
+
+    if (!formData.country) {
+      newErrors.country = 'Please select a country';
+    }
+
+    if (!formData.language) {
+      newErrors.language = 'Please select a language';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Please provide or generate a business description';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const extractMetadata = async () => {
+    if (!formData.websiteUrl) return;
+
+    setExtracting(true);
+    try {
+      const metadata = await extractWebsiteMetadata(formData.websiteUrl);
+
+      // Auto-fill business name if not set
+      if (!formData.businessName && metadata.title) {
+        updateField('businessName', metadata.title);
+      }
+
+      // Auto-detect language
+      if (metadata.language) {
+        const languageExists = LANGUAGES.some(l => l.code === metadata.language);
+        if (languageExists) {
+          updateField('language', metadata.language);
+        }
+      }
+
+      // Set description if available
+      if (metadata.description) {
+        updateField('description', metadata.description);
+      }
+    } catch (error) {
+      console.error('Failed to extract metadata:', error);
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    setExtracting(true);
+    try {
+      const response = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          websiteUrl: formData.websiteUrl,
+          businessName: formData.businessName,
+          existingDescription: formData.description,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        updateField('description', data.description);
+      }
+    } catch (error) {
+      console.error('Failed to generate description:', error);
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Create project with business details
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          name: formData.businessName,
+          website_url: formData.websiteUrl,
+          country: formData.country,
+          language: formData.language,
+          description: formData.description,
+          status: 'active',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error creating project:', error);
+      setErrors({ businessName: 'Failed to save business details. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl">
+        <form onSubmit={handleSubmit}>
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">About your business</h1>
+            <p className="text-gray-600">Provide your business information to personalize content generation and SEO strategies</p>
+          </div>
+
+          {/* Form Card */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+            <div className="space-y-6">
+
+        {/* Step 1: Business Name & Website */}
+        {step === 1 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Welcome to RankPulse
+              </h2>
+              <p className="text-gray-600">
+                Let's start by learning about your business
+              </p>
+            </div>
+
+            <Input
+              label="Business Name"
+              placeholder="e.g., Acme Corporation"
+              value={formData.businessName}
+              onChange={(e) => updateField('businessName', e.target.value)}
+              error={errors.businessName}
+              required
+            />
+
+            <Input
+              label="Website URL"
+              placeholder="e.g., https://example.com"
+              value={formData.websiteUrl}
+              onChange={(e) => updateField('websiteUrl', e.target.value)}
+              error={errors.websiteUrl}
+              helperText="We'll analyze your website to better understand your business"
+              required
+            />
+
+            <div className="flex justify-end">
+              <Button onClick={handleNext} loading={extracting}>
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Country & Language */}
+        {step === 2 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Where is your business located?
+              </h2>
+              <p className="text-gray-600">
+                This helps us create content optimized for your market
+              </p>
+            </div>
+
+            <Select
+              label="Country"
+              value={formData.country}
+              onChange={(e) => updateField('country', e.target.value)}
+              options={COUNTRIES.map(c => ({ value: c.code, label: `${c.flag} ${c.name}` }))}
+              error={errors.country}
+              required
+            />
+
+            <Select
+              label="Primary Language"
+              value={formData.language}
+              onChange={(e) => updateField('language', e.target.value)}
+              options={LANGUAGES.map(l => ({ value: l.code, label: `${l.name} (${l.nativeName})` }))}
+              error={errors.language}
+              required
+            />
+
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={handleBack}>
+                Back
+              </Button>
+              <Button onClick={handleNext}>
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Description */}
+        {step === 3 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Describe your business
+              </h2>
+              <p className="text-gray-600">
+                This helps our AI create better, more relevant content for you
+              </p>
+            </div>
+
+            <Textarea
+              label="Business Description"
+              placeholder="Describe what your business does, your target audience, and what makes you unique..."
+              value={formData.description}
+              onChange={(e) => updateField('description', e.target.value)}
+              error={errors.description}
+              rows={6}
+              required
+            />
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleGenerateDescription}
+                loading={extracting}
+                disabled={!formData.websiteUrl}
+              >
+                Generate from Website
+              </Button>
+              {formData.description && (
+                <Button
+                  variant="ghost"
+                  onClick={handleGenerateDescription}
+                  loading={extracting}
+                >
+                  Improve Description
+                </Button>
+              )}
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <Button variant="outline" onClick={handleBack}>
+                Back
+              </Button>
+              <Button onClick={handleSubmit} loading={loading}>
+                Complete Setup
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}

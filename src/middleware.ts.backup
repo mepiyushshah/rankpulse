@@ -1,0 +1,100 @@
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export async function middleware(req: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          req.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: any) {
+          req.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
+    }
+  );
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const pathname = req.nextUrl.pathname;
+
+  // Public routes that don't require authentication
+  const publicRoutes = ['/', '/auth/login', '/auth/signup', '/auth/reset-password'];
+  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith('/auth/'));
+
+  // If not authenticated and trying to access protected route, redirect to login
+  if (!session && !isPublicRoute) {
+    const redirectUrl = new URL('/auth/login', req.url);
+    redirectUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // If authenticated and on auth pages, allow the page to handle its own navigation
+  // Don't redirect here - let the client-side code handle it
+  if (session && pathname.startsWith('/auth/')) {
+    return response;
+  }
+
+  // If user is on onboarding page and has projects, redirect to dashboard
+  if (session && pathname === '/onboarding') {
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .limit(1);
+
+    // If has projects, redirect away from onboarding to dashboard
+    if (projects && projects.length > 0) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};

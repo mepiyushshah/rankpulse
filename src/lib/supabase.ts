@@ -24,7 +24,9 @@ export type Project = {
   user_id: string;
   name: string;
   website_url: string | null;
+  country: string | null;
   language: string;
+  description: string | null;
   brand_voice: string | null;
   default_author: string | null;
   status: string;
