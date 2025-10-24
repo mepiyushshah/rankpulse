@@ -127,6 +127,45 @@ export default function ContentPlannerPage() {
 
       const articlesToCreate = [];
 
+      // Function to intelligently detect content type from keyword
+      const detectContentType = (keyword: string): string => {
+        const lowerKeyword = keyword.toLowerCase();
+
+        // How-to Guide patterns
+        if (lowerKeyword.match(/\b(how to|how do|step by step|guide to)\b/)) {
+          return 'How-to Guide';
+        }
+
+        // Listicle patterns
+        if (lowerKeyword.match(/\b(best|top|ways to|tips|ideas|examples|\d+)\b/)) {
+          return 'Listicle';
+        }
+
+        // Tutorial patterns
+        if (lowerKeyword.match(/\b(tutorial|learn|beginner|course|training|basics)\b/)) {
+          return 'Tutorial';
+        }
+
+        // Comparison patterns
+        if (lowerKeyword.match(/\b(vs|versus|comparison|compare|difference between|\bor\b)\b/)) {
+          return 'Comparison';
+        }
+
+        // Case Study patterns
+        if (lowerKeyword.match(/\b(case study|success story|results|example of|analysis)\b/)) {
+          return 'Case Study';
+        }
+
+        // Intelligent default based on keyword type
+        // Question-type keywords → Guide
+        if (lowerKeyword.match(/\b(what is|what are|why|when|where|which)\b/)) {
+          return 'Guide';
+        }
+
+        // Simple noun/topic → Article
+        return 'Article';
+      };
+
       for (let i = 0; i < keywords.length; i++) {
         const keyword = keywords[i];
         const savedKeyword = savedKeywords[i];
@@ -134,6 +173,9 @@ export default function ContentPlannerPage() {
         // Calculate scheduled date: tomorrow + i days
         const scheduledDate = new Date(tomorrow);
         scheduledDate.setDate(tomorrow.getDate() + i);
+
+        // Detect content type from keyword
+        const contentType = detectContentType(keyword.keyword);
 
         articlesToCreate.push({
           project_id: projectId,
@@ -143,7 +185,7 @@ export default function ContentPlannerPage() {
           scheduled_at: scheduledDate.toISOString(),
           keyword_id: savedKeyword.id,
           target_keyword: keyword.keyword,
-          content_type: 'Article',
+          content_type: contentType,
           search_volume: keyword.volume || 0,
           keyword_difficulty: keyword.difficulty || 0,
           language: 'en',
@@ -403,9 +445,9 @@ function CalendarDayCell({ day, articles }: { day: CalendarDay; articles: Articl
               key={article.id}
               className={`${getDifficultyColor(article.keyword_difficulty)} border rounded-md p-2`}
             >
-              {/* Keyword */}
+              {/* Title or Keyword */}
               <p className="text-xs font-bold text-gray-900 break-words">
-                {article.target_keyword}
+                {article.title && !article.title.startsWith('Article:') ? article.title : article.target_keyword}
               </p>
 
               {/* Volume and Difficulty */}

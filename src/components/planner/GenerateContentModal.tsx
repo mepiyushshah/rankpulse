@@ -16,10 +16,7 @@ interface GenerateContentModalProps {
 }
 
 export interface GenerationConfig {
-  articlesPerWeek: number;
-  startWeek: number;
-  contentMix: 'balanced' | 'tutorial-heavy' | 'listicle-heavy';
-  numKeywords?: number;
+  numKeywords: number;
   selectedCompetitors?: string[];
   selectedAudiences?: string[];
 }
@@ -99,9 +96,6 @@ export function GenerateContentModal({
 
   const handleGenerate = () => {
     onGenerate({
-      articlesPerWeek: 2,
-      startWeek: 1,
-      contentMix: 'balanced',
       numKeywords: parseInt(numKeywords) || 8,
       selectedCompetitors,
       selectedAudiences,
