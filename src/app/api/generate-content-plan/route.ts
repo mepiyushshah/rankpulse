@@ -54,11 +54,12 @@ export async function POST(request: Request) {
     const startWeekOffset = (config.startWeek - 1) * 7;
 
     // 5. Prepare AI prompt
-    const contentTypePreference = {
+    const contentTypePreferences: Record<string, string> = {
       'balanced': 'a balanced mix of How-to Guides, Listicles, Tutorials, Comparisons, and Case Studies',
       'tutorial-heavy': 'mostly How-to Guides and Tutorials (70%), with some Listicles and Comparisons (30%)',
       'listicle-heavy': 'mostly Listicles and "Best of" articles (70%), with some How-to Guides (30%)',
-    }[config.contentMix];
+    };
+    const contentTypePreference = contentTypePreferences[config.contentMix] || contentTypePreferences['balanced'];
 
     const prompt = `You are an expert SEO content strategist. Generate a monthly content calendar for ${new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })}.
 
