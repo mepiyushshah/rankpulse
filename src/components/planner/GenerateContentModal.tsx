@@ -124,7 +124,7 @@ export function GenerateContentModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title="" maxWidth="md">
+    <Dialog open={open} onClose={onClose} title="Generate Content Plan" maxWidth="2xl">
       <div className="space-y-6">
         {/* Generation Type */}
         <div className="relative">

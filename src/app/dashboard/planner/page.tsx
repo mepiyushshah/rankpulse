@@ -108,18 +108,93 @@ export default function ContentPlannerPage() {
     }
 
     try {
-      const response = await fetch('/api/keywords', {
+      // First, save keywords to database
+      const keywordResponse = await fetch('/api/keywords', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, keywords }),
       });
 
-      if (!response.ok) throw new Error('Failed to save keywords');
+      if (!keywordResponse.ok) throw new Error('Failed to save keywords');
 
-      alert(`Successfully added ${keywords.length} keyword(s)!`);
+      const { keywords: savedKeywords } = await keywordResponse.json();
+
+      // Now assign keywords to calendar dates (1 keyword per date)
+      // Start from TOMORROW (actual today + 1 day, regardless of calendar month)
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1); // Add 1 day to today
+      tomorrow.setHours(12, 0, 0, 0); // Set to noon
+
+      const articlesToCreate = [];
+
+      for (let i = 0; i < keywords.length; i++) {
+        const keyword = keywords[i];
+        const savedKeyword = savedKeywords[i];
+
+        // Calculate scheduled date: tomorrow + i days
+        const scheduledDate = new Date(tomorrow);
+        scheduledDate.setDate(tomorrow.getDate() + i);
+
+        articlesToCreate.push({
+          project_id: projectId,
+          title: `Article: ${keyword.keyword}`,
+          content: '',
+          status: 'scheduled',
+          scheduled_at: scheduledDate.toISOString(),
+          keyword_id: savedKeyword.id,
+          target_keyword: keyword.keyword,
+          content_type: 'Article',
+          search_volume: keyword.volume || 0,
+          keyword_difficulty: keyword.difficulty || 0,
+          language: 'en',
+        });
+      }
+
+      // Create articles in database
+      if (articlesToCreate.length > 0) {
+        const articleResponse = await fetch('/api/articles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articles: articlesToCreate }),
+        });
+
+        if (!articleResponse.ok) throw new Error('Failed to create articles');
+      }
+
+      alert(`Successfully added ${keywords.length} keyword(s) to calendar!`);
+      await loadArticles(); // Reload calendar to show new articles
     } catch (error) {
       console.error('Error saving keywords:', error);
       alert('Failed to save keywords. Please try again.');
+    }
+  };
+
+  // Handle clearing current month's articles
+  const handleClearMonth = async () => {
+    if (!projectId) {
+      alert('No project selected');
+      return;
+    }
+
+    const confirmed = confirm('Are you sure you want to delete all articles from this month?');
+    if (!confirmed) return;
+
+    setLoading(true);
+    try {
+      const { year, month } = getCalendarData(currentDate);
+      const response = await fetch(`/api/articles/delete?projectId=${projectId}&month=${month}&year=${year}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete articles');
+
+      alert('Successfully cleared all articles from this month!');
+      await loadArticles();
+    } catch (error) {
+      console.error('Error clearing articles:', error);
+      alert('Failed to clear articles. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -206,24 +281,38 @@ export default function ContentPlannerPage() {
       </div>
 
       {/* Month Navigation */}
-      <div className="flex items-center gap-3 mb-5">
-        <button
-          onClick={goToPreviousMonth}
-          className="h-10 w-10 flex items-center justify-center bg-white border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg active:shadow-sm transition-all hover:scale-105 active:scale-95"
-          style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 -2px 0 0 rgba(0, 0, 0, 0.05)' }}
-        >
-          <ChevronLeft className="h-5 w-5 text-gray-700" />
-        </button>
-        <h2 className="text-xl font-semibold text-gray-900 min-w-[180px] text-center">
-          {monthName} {year}
-        </h2>
-        <button
-          onClick={goToNextMonth}
-          className="h-10 w-10 flex items-center justify-center bg-white border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg active:shadow-sm transition-all hover:scale-105 active:scale-95"
-          style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 -2px 0 0 rgba(0, 0, 0, 0.05)' }}
-        >
-          <ChevronRight className="h-5 w-5 text-gray-700" />
-        </button>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={goToPreviousMonth}
+            className="h-10 w-10 flex items-center justify-center bg-white border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg active:shadow-sm transition-all hover:scale-105 active:scale-95"
+            style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 -2px 0 0 rgba(0, 0, 0, 0.05)' }}
+          >
+            <ChevronLeft className="h-5 w-5 text-gray-700" />
+          </button>
+          <h2 className="text-xl font-semibold text-gray-900 min-w-[180px] text-center">
+            {monthName} {year}
+          </h2>
+          <button
+            onClick={goToNextMonth}
+            className="h-10 w-10 flex items-center justify-center bg-white border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg active:shadow-sm transition-all hover:scale-105 active:scale-95"
+            style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 -2px 0 0 rgba(0, 0, 0, 0.05)' }}
+          >
+            <ChevronRight className="h-5 w-5 text-gray-700" />
+          </button>
+        </div>
+
+        {articles.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearMonth}
+            loading={loading}
+            className="text-red-600 border-red-200 hover:bg-red-50"
+          >
+            Clear Month
+          </Button>
+        )}
       </div>
 
       {/* Calendar Grid */}
@@ -314,18 +403,23 @@ function CalendarDayCell({ day, articles }: { day: CalendarDay; articles: Articl
               key={article.id}
               className={`${getDifficultyColor(article.keyword_difficulty)} border rounded-md p-2`}
             >
-              <div className="flex items-start gap-1">
-                <span className="text-[10px] font-medium text-gray-700">
+              {/* Keyword */}
+              <p className="text-xs font-bold text-gray-900 break-words">
+                {article.target_keyword}
+              </p>
+
+              {/* Volume and Difficulty */}
+              <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-600">
+                <span className="font-medium">Vol: {article.search_volume >= 1000 ? `${(article.search_volume / 1000).toFixed(1)}K` : article.search_volume}</span>
+                <span>•</span>
+                <span className="font-medium">Diff: {article.keyword_difficulty}</span>
+              </div>
+
+              {/* Content Type */}
+              <div className="flex items-center gap-1 mt-1">
+                <span className="text-[10px] text-gray-500">
                   {getContentTypeEmoji(article.content_type)} {article.content_type}
                 </span>
-              </div>
-              <p className="text-xs font-semibold text-gray-900 mt-1 line-clamp-2">
-                {article.title}
-              </p>
-              <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
-                <span>Vol: {article.search_volume >= 1000 ? `${(article.search_volume / 1000).toFixed(1)}K` : article.search_volume}</span>
-                <span>•</span>
-                <span>Diff: {article.keyword_difficulty}</span>
               </div>
             </div>
           ))
