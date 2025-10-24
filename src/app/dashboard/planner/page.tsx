@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { KeywordModal } from '@/components/keywords/KeywordModal';
+import { supabase } from '@/lib/supabase';
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,6 +22,52 @@ interface CalendarDay {
 
 export default function ContentPlannerPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [keywordModalOpen, setKeywordModalOpen] = useState(false);
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  // Load project on mount
+  useEffect(() => {
+    loadProject();
+  }, []);
+
+  const loadProject = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: projectsData } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .single();
+
+    if (projectsData) {
+      setProjectId(projectsData.id);
+    }
+  };
+
+  // Handle keyword addition
+  const handleAddKeywords = async (keywords: { keyword: string; volume?: number; difficulty?: number }[]) => {
+    if (!projectId) {
+      alert('No project selected');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/keywords', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, keywords }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save keywords');
+
+      alert(`Successfully added ${keywords.length} keyword(s)!`);
+    } catch (error) {
+      console.error('Error saving keywords:', error);
+      alert('Failed to save keywords. Please try again.');
+    }
+  };
 
   // Get calendar data
   const { year, month, monthName, daysInMonth, firstDayOfMonth } = getCalendarData(currentDate);
@@ -55,6 +103,7 @@ export default function ContentPlannerPage() {
             variant="outline"
             size="sm"
             className="whitespace-nowrap"
+            onClick={() => setKeywordModalOpen(true)}
           >
             <Plus className="mr-1.5 h-4 w-4" />
             Add Manually
@@ -100,6 +149,13 @@ export default function ContentPlannerPage() {
           />
         ))}
       </div>
+
+      {/* Keyword Modal */}
+      <KeywordModal
+        open={keywordModalOpen}
+        onClose={() => setKeywordModalOpen(false)}
+        onAddKeywords={handleAddKeywords}
+      />
     </div>
   );
 }
