@@ -52,11 +52,12 @@ export default function SettingsPage() {
       });
 
       // Load audience data if exists
+      // Note: JSONB columns are automatically parsed by Supabase, no need for JSON.parse
       if (data.target_audiences || data.competitors) {
         setAudienceData({
-          targetAudiences: data.target_audiences ? JSON.parse(data.target_audiences) : [],
+          targetAudiences: Array.isArray(data.target_audiences) ? data.target_audiences : [],
           newAudience: '',
-          competitors: data.competitors ? JSON.parse(data.competitors) : [],
+          competitors: Array.isArray(data.competitors) ? data.competitors : [],
           newCompetitor: '',
         });
       }
@@ -102,8 +103,8 @@ export default function SettingsPage() {
       const { error } = await supabase
         .from('projects')
         .update({
-          target_audiences: JSON.stringify(audienceData.targetAudiences),
-          competitors: JSON.stringify(audienceData.competitors),
+          target_audiences: audienceData.targetAudiences,
+          competitors: audienceData.competitors,
         })
         .eq('id', project.id);
 
