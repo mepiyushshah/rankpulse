@@ -5,7 +5,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 
 interface GenerateContentModalProps {
   open: boolean;
@@ -19,6 +19,14 @@ export interface GenerationConfig {
   numKeywords: number;
   selectedCompetitors?: string[];
   selectedAudiences?: string[];
+  selectedKeywords?: { keyword: string; volume: number; difficulty: number }[];
+}
+
+interface GeneratedKeyword {
+  keyword: string;
+  volume: number;
+  difficulty: number;
+  reason: string;
 }
 
 type GenerationType = 'competitors' | 'target_audiences' | 'competitors_audiences';
@@ -30,21 +38,28 @@ export function GenerateContentModal({
   currentMonth,
   projectId,
 }: GenerateContentModalProps) {
+  const [step, setStep] = useState<'configure' | 'preview'>('configure');
   const [generationType, setGenerationType] = useState<GenerationType>('competitors_audiences');
   const [numKeywords, setNumKeywords] = useState('8');
   const [availableCompetitors, setAvailableCompetitors] = useState<string[]>([]);
   const [availableAudiences, setAvailableAudiences] = useState<string[]>([]);
   const [selectedCompetitors, setSelectedCompetitors] = useState<string[]>([]);
   const [selectedAudiences, setSelectedAudiences] = useState<string[]>([]);
+  const [generatedKeywords, setGeneratedKeywords] = useState<GeneratedKeyword[]>([]);
+  const [selectedKeywordIndices, setSelectedKeywordIndices] = useState<Set<number>>(new Set());
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showCompetitorDropdown, setShowCompetitorDropdown] = useState(false);
   const [showAudienceDropdown, setShowAudienceDropdown] = useState(false);
 
-  // Load project data when modal opens
+  // Reset state when modal opens/closes
   useEffect(() => {
     if (open && projectId) {
       loadProjectData();
+      setStep('configure');
+      setGeneratedKeywords([]);
+      setSelectedKeywordIndices(new Set());
     }
   }, [open, projectId]);
 
@@ -94,13 +109,64 @@ export function GenerateContentModal({
     setSelectedAudiences(availableAudiences);
   };
 
-  const handleGenerate = () => {
+  const handleGenerateKeywords = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-keywords-only', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          numKeywords: parseInt(numKeywords) || 8,
+          competitors: selectedCompetitors,
+          audiences: selectedAudiences,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate keywords');
+      }
+
+      const data = await response.json();
+      setGeneratedKeywords(data.keywords);
+      // Select all by default
+      setSelectedKeywordIndices(new Set(data.keywords.map((_: any, i: number) => i)));
+      setStep('preview');
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate keywords');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleAddToCalendar = () => {
+    const selectedKeywords = Array.from(selectedKeywordIndices).map(i => generatedKeywords[i]);
     onGenerate({
-      numKeywords: parseInt(numKeywords) || 8,
+      numKeywords: selectedKeywords.length,
       selectedCompetitors,
       selectedAudiences,
+      selectedKeywords,
     });
     onClose();
+  };
+
+  const toggleKeywordSelection = (index: number) => {
+    const newSet = new Set(selectedKeywordIndices);
+    if (newSet.has(index)) {
+      newSet.delete(index);
+    } else {
+      newSet.add(index);
+    }
+    setSelectedKeywordIndices(newSet);
+  };
+
+  const selectAllKeywords = () => {
+    setSelectedKeywordIndices(new Set(generatedKeywords.map((_, i) => i)));
+  };
+
+  const deselectAllKeywords = () => {
+    setSelectedKeywordIndices(new Set());
   };
 
   const getCompetitorLabel = () => {
@@ -118,7 +184,13 @@ export function GenerateContentModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title="Generate Content Plan" maxWidth="2xl">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={step === 'configure' ? 'Generate Keywords with AI' : 'Select Keywords to Add'}
+      maxWidth="2xl"
+    >
+      {step === 'configure' ? (
       <div className="space-y-6">
         {/* Generation Type */}
         <div className="relative">
@@ -289,11 +361,82 @@ export function GenerateContentModal({
           <Button variant="outline" onClick={onClose} size="md">
             Cancel
           </Button>
-          <Button onClick={handleGenerate} size="md">
-            Generate
+          <Button onClick={handleGenerateKeywords} size="md" loading={isGenerating}>
+            {isGenerating ? 'Generating...' : 'Generate Keywords'}
           </Button>
         </div>
       </div>
+      ) : (
+        /* Preview Step */
+        <div className="space-y-4">
+          {/* Header Actions */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-gray-600">
+              {selectedKeywordIndices.size} of {generatedKeywords.length} keywords selected
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={selectAllKeywords}>
+                Select All
+              </Button>
+              <Button variant="outline" size="sm" onClick={deselectAllKeywords}>
+                Deselect All
+              </Button>
+            </div>
+          </div>
+
+          {/* Keywords List */}
+          <div className="max-h-[500px] overflow-y-auto space-y-2">
+            {generatedKeywords.map((kw, index) => (
+              <label
+                key={index}
+                className={`
+                  flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all
+                  ${selectedKeywordIndices.has(index) ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'}
+                `}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedKeywordIndices.has(index)}
+                  onChange={() => toggleKeywordSelection(index)}
+                  className="mt-1 h-5 w-5 text-primary rounded border-gray-300"
+                />
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-semibold text-gray-900">{kw.keyword}</h4>
+                    <div className="flex gap-3 text-sm">
+                      <span className="text-gray-600">Vol: <strong>{kw.volume >= 1000 ? `${(kw.volume / 1000).toFixed(1)}K` : kw.volume}</strong></span>
+                      <span className="text-gray-600">Diff: <strong className={
+                        kw.difficulty < 30 ? 'text-green-600' :
+                        kw.difficulty < 60 ? 'text-yellow-600' : 'text-red-600'
+                      }>{kw.difficulty}</strong></span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{kw.reason}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-between gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setStep('configure')} size="md">
+              Back
+            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={onClose} size="md">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddToCalendar}
+                size="md"
+                disabled={selectedKeywordIndices.size === 0}
+              >
+                Add {selectedKeywordIndices.size} to Calendar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Dialog>
   );
 }

@@ -54,7 +54,7 @@ export default function ContentPlannerPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: projectsData } = await supabase
+    const { data: projectsData, error } = await supabase
       .from('projects')
       .select('id')
       .eq('user_id', user.id)
@@ -63,6 +63,21 @@ export default function ContentPlannerPage() {
 
     if (projectsData) {
       setProjectId(projectsData.id);
+    } else if (error?.code === 'PGRST116') {
+      // No project found - create a default one
+      const { data: newProject } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          name: 'My Project',
+          description: 'Default project',
+        })
+        .select('id')
+        .single();
+
+      if (newProject) {
+        setProjectId(newProject.id);
+      }
     }
   };
 
@@ -119,11 +134,24 @@ export default function ContentPlannerPage() {
 
       const { keywords: savedKeywords } = await keywordResponse.json();
 
+      // Get all existing articles to find occupied dates
+      const { data: existingArticles } = await supabase
+        .from('articles')
+        .select('scheduled_at')
+        .eq('project_id', projectId);
+
+      const occupiedDates = new Set(
+        (existingArticles || []).map((article: any) => {
+          const date = new Date(article.scheduled_at);
+          return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        })
+      );
+
       // Now assign keywords to calendar dates (1 keyword per date)
       // Start from TOMORROW (actual today + 1 day, regardless of calendar month)
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1); // Add 1 day to today
-      tomorrow.setHours(12, 0, 0, 0); // Set to noon
+      let currentDate = new Date();
+      currentDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
+      currentDate.setHours(12, 0, 0, 0); // Set to noon
 
       const articlesToCreate = [];
 
@@ -170,9 +198,16 @@ export default function ContentPlannerPage() {
         const keyword = keywords[i];
         const savedKeyword = savedKeywords[i];
 
-        // Calculate scheduled date: tomorrow + i days
-        const scheduledDate = new Date(tomorrow);
-        scheduledDate.setDate(tomorrow.getDate() + i);
+        // Find next available date (skip occupied dates)
+        while (true) {
+          const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
+          if (!occupiedDates.has(dateKey)) {
+            // This date is free, use it
+            break;
+          }
+          // Date is occupied, move to next day
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
 
         // Detect content type from keyword
         const contentType = detectContentType(keyword.keyword);
@@ -182,7 +217,7 @@ export default function ContentPlannerPage() {
           title: `Article: ${keyword.keyword}`,
           content: '',
           status: 'scheduled',
-          scheduled_at: scheduledDate.toISOString(),
+          scheduled_at: currentDate.toISOString(),
           keyword_id: savedKeyword.id,
           target_keyword: keyword.keyword,
           content_type: contentType,
@@ -190,6 +225,13 @@ export default function ContentPlannerPage() {
           keyword_difficulty: keyword.difficulty || 0,
           language: 'en',
         });
+
+        // Mark this date as occupied for next iteration
+        const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
+        occupiedDates.add(dateKey);
+
+        // Move to next day for next keyword
+        currentDate.setDate(currentDate.getDate() + 1);
       }
 
       // Create articles in database
@@ -240,13 +282,20 @@ export default function ContentPlannerPage() {
     }
   };
 
-  // Handle content plan generation
+  // Handle content plan generation (now handles selected keywords)
   const handleGenerateContentPlan = async (config: GenerationConfig) => {
     if (!projectId) {
       alert('No project selected');
       return;
     }
 
+    // If selectedKeywords exists, use the new flow (add keywords directly to calendar)
+    if (config.selectedKeywords && config.selectedKeywords.length > 0) {
+      await handleAddKeywords(config.selectedKeywords);
+      return;
+    }
+
+    // Otherwise, fallback to old flow (shouldn't happen with new UI, but keeping for safety)
     setLoading(true);
     try {
       const { year, month } = getCalendarData(currentDate);
