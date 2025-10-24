@@ -35,7 +35,7 @@ const navigation: NavItem[] = [
     name: 'Articles',
     icon: FileText,
     subItems: [
-      { name: 'Content Planner', href: '/dashboard/articles/planner', icon: CalendarDays },
+      { name: 'Content Planner', href: '/dashboard/planner', icon: CalendarDays },
       { name: 'Content History', href: '/dashboard/articles/history', icon: History },
       { name: 'Articles Settings', href: '/dashboard/articles/settings', icon: Settings },
       { name: 'Integrations', href: '/dashboard/integrations', icon: Plug },
