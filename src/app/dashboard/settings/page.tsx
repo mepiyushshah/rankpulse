@@ -24,6 +24,7 @@ export default function SettingsPage() {
     newCompetitor: '',
   });
   const [generatingAudience, setGeneratingAudience] = useState(false);
+  const [generatingCompetitors, setGeneratingCompetitors] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -193,6 +194,48 @@ export default function SettingsPage() {
     });
   };
 
+  const handleGenerateCompetitors = async () => {
+    if (!formData.websiteUrl || !formData.description) {
+      setMessage('Please fill in your website URL and business description first');
+      return;
+    }
+
+    setGeneratingCompetitors(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/generate-competitors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          websiteUrl: formData.websiteUrl,
+          businessName: formData.name,
+          description: formData.description,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Merge new competitors with existing ones
+        const newCompetitors = [...audienceData.competitors];
+        data.competitors.forEach((competitor: string) => {
+          if (!newCompetitors.includes(competitor)) {
+            newCompetitors.push(competitor);
+          }
+        });
+        setAudienceData({ ...audienceData, competitors: newCompetitors });
+        setMessage('Competitors generated successfully!');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Failed to generate competitors');
+      }
+    } catch (error) {
+      setMessage('Error generating competitors');
+    } finally {
+      setGeneratingCompetitors(false);
+    }
+  };
+
   const handleGenerateDescription = async () => {
     if (!formData.websiteUrl) {
       setMessage('Please enter website URL first');
@@ -249,16 +292,6 @@ export default function SettingsPage() {
                 }`}
               >
                 Audience and Competitors
-              </button>
-              <button
-                onClick={() => setActiveTab('console')}
-                className={`pb-4 px-1 border-b-2 font-medium transition-colors ${
-                  activeTab === 'console'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Google Search Console
               </button>
             </nav>
           </div>
@@ -476,10 +509,10 @@ export default function SettingsPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleGenerateAudiences}
-                  loading={false}
-                  disabled={true}
-                  className="text-sm opacity-50 cursor-not-allowed"
+                  onClick={handleGenerateCompetitors}
+                  loading={generatingCompetitors}
+                  disabled={generatingCompetitors}
+                  className="text-sm"
                 >
                   Autocomplete With AI
                 </Button>
@@ -557,19 +590,6 @@ export default function SettingsPage() {
         </div>
         )}
 
-        {activeTab === 'console' && (
-        <div className="bg-white rounded-lg border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Google Search Console
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Connect your Google Search Console to track SEO performance
-          </p>
-          <div className="text-center py-12">
-            <p className="text-gray-500">Coming soon...</p>
-          </div>
-        </div>
-        )}
       </div>
   );
 }
