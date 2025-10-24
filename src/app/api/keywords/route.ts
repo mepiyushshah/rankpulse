@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
     const { projectId, keywords } = await request.json();
 
     if (!projectId || !keywords || keywords.length === 0) {
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
 
