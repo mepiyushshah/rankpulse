@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { Loader2, Sparkles, Edit2, Save, X } from 'lucide-react';
+import { marked } from 'marked';
 
 interface Article {
   id: string;
@@ -36,6 +38,20 @@ export function ArticleDetailModal({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+
+  // Convert markdown to HTML for display - MUST be before conditional return
+  const contentHtml = useMemo(() => {
+    if (!article?.content) return '';
+    try {
+      return marked(article.content, {
+        breaks: true,
+        gfm: true
+      }) as string;
+    } catch (error) {
+      console.error('Error converting markdown:', error);
+      return article.content;
+    }
+  }, [article?.content]);
 
   if (!article) return null;
 
@@ -74,7 +90,8 @@ export function ArticleDetailModal({
   };
 
   const handleStartEdit = () => {
-    setEditedContent(article.content);
+    // Use the HTML version for editing
+    setEditedContent(contentHtml);
     setIsEditing(true);
   };
 
@@ -120,64 +137,47 @@ export function ArticleDetailModal({
     <Dialog
       open={open}
       onClose={onClose}
-      title={article.target_keyword}
-      maxWidth="2xl"
+      title=""
+      maxWidth="6xl"
     >
-      <div className="space-y-6">
-        {/* Article Metadata */}
-        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Content Type</p>
-              <p className="text-base font-semibold text-gray-900">{article.content_type}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Scheduled Date</p>
-              <p className="text-base font-semibold text-gray-900">
-                {scheduledDate.toLocaleDateString('en-US', {
-                  month: 'short',
+      <div className="min-h-[80vh]">
+        {/* Header Section - Magazine Style */}
+        <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-12 py-10 -mx-6 -mt-4 mb-8 border-b border-gray-100">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="px-4 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-full">
+                  {article.content_type}
+                </span>
+                <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${getDifficultyColor(article.keyword_difficulty)}`}>
+                  Difficulty: {article.keyword_difficulty}
+                </span>
+                <span className="px-4 py-1.5 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">
+                  {article.search_volume >= 1000
+                    ? `${(article.search_volume / 1000).toFixed(1)}K`
+                    : article.search_volume} searches/mo
+                </span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-3">
+                {article.target_keyword}
+              </h1>
+              <p className="text-lg text-gray-600">
+                Scheduled for {scheduledDate.toLocaleDateString('en-US', {
+                  month: 'long',
                   day: 'numeric',
                   year: 'numeric'
                 })}
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div>
-              <p className="text-sm text-gray-500">Search Volume</p>
-              <p className="text-base font-semibold text-gray-900">
-                {article.search_volume >= 1000
-                  ? `${(article.search_volume / 1000).toFixed(1)}K`
-                  : article.search_volume}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Difficulty</p>
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getDifficultyColor(article.keyword_difficulty)}`}>
-                {article.keyword_difficulty}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Status</p>
-              <p className="text-base font-semibold text-gray-900 capitalize">{article.status}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Article Content</h3>
             <div className="flex gap-2">
               {hasContent && !isEditing && (
                 <Button
-                  variant="outline"
+                  variant="primary"
                   size="sm"
                   onClick={handleStartEdit}
                 >
                   <Edit2 className="mr-1.5 h-4 w-4" />
-                  Edit
+                  Edit Article
                 </Button>
               )}
               {isEditing && (
@@ -203,58 +203,84 @@ export function ArticleDetailModal({
               )}
             </div>
           </div>
+        </div>
 
+        {/* Content Area - Premium Article Style */}
+        <div className="px-4">
           {!hasContent ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                No content generated yet
+            <div className="text-center py-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 shadow-inner">
+              <div className="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Sparkles className="h-10 w-10 text-indigo-600" />
+              </div>
+              <h4 className="text-2xl font-bold text-gray-900 mb-3">
+                Ready to Create Magic?
               </h4>
-              <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
-                Generate AI-powered article content optimized for the keyword "{article.target_keyword}"
+              <p className="text-base text-gray-600 mb-8 max-w-xl mx-auto leading-relaxed">
+                Generate professional, SEO-optimized content for "<span className="font-semibold text-gray-900">{article.target_keyword}</span>" powered by advanced AI
               </p>
               <Button
                 variant="primary"
                 onClick={handleGenerateContent}
                 loading={isGenerating}
+                className="px-8 py-3 text-base"
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Article...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Generating Your Article...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-2 h-5 w-5" />
                     Generate Article with AI
                   </>
                 )}
               </Button>
             </div>
           ) : isEditing ? (
-            <textarea
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              className="w-full h-96 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none font-mono text-sm"
-              placeholder="Write your article content here..."
-            />
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              <RichTextEditor
+                value={editedContent}
+                onChange={setEditedContent}
+                placeholder="Write your article content here..."
+              />
+            </div>
           ) : (
-            <div className="prose max-w-none bg-white border border-gray-200 rounded-lg p-6 max-h-96 overflow-y-auto">
-              <div className="whitespace-pre-wrap text-gray-900">
-                {article.content}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="max-w-4xl mx-auto px-16 py-12">
+                <article
+                  className="prose prose-xl prose-slate max-w-none
+                    prose-headings:font-bold prose-headings:text-gray-900 prose-headings:tracking-tight
+                    prose-h1:text-4xl prose-h1:mb-6 prose-h1:mt-8
+                    prose-h2:text-3xl prose-h2:mb-5 prose-h2:mt-10 prose-h2:border-b prose-h2:border-gray-200 prose-h2:pb-3
+                    prose-h3:text-2xl prose-h3:mb-4 prose-h3:mt-8
+                    prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-6 prose-p:text-lg
+                    prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:text-indigo-800 hover:prose-a:underline
+                    prose-strong:text-gray-900 prose-strong:font-semibold
+                    prose-ul:my-6 prose-ul:space-y-2
+                    prose-ol:my-6 prose-ol:space-y-2
+                    prose-li:text-gray-700 prose-li:text-lg prose-li:leading-relaxed
+                    prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-indigo-50 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-gray-700
+                    prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-indigo-600 prose-code:font-mono
+                    prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:p-6
+                    prose-img:rounded-lg prose-img:shadow-lg
+                  "
+                  dangerouslySetInnerHTML={{ __html: contentHtml }}
+                />
               </div>
             </div>
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-between gap-3 pt-4 border-t">
+        {/* Action Footer */}
+        <div className="flex justify-between items-center gap-3 pt-8 mt-8 border-t border-gray-200 px-4">
           <div>
             {hasContent && !isEditing && (
               <Button
                 variant="outline"
                 onClick={handleGenerateContent}
                 loading={isGenerating}
+                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 Regenerate with AI

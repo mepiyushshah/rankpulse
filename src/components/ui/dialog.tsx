@@ -6,7 +6,7 @@ interface DialogProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '6xl' | 'full';
 }
 
 export function Dialog({ open, onClose, children, title, maxWidth = 'lg' }: DialogProps) {
@@ -18,6 +18,9 @@ export function Dialog({ open, onClose, children, title, maxWidth = 'lg' }: Dial
     lg: 'max-w-lg',
     xl: 'max-w-xl',
     '2xl': 'max-w-2xl',
+    '4xl': 'max-w-4xl',
+    '6xl': 'max-w-6xl',
+    'full': 'max-w-full mx-8',
   };
 
   return (
