@@ -93,6 +93,22 @@ npm run dev
 
 ---
 
+## ⚠️ **Important Note About Automation**
+
+The **automated article generation** feature (cron job) requires a **Vercel Pro plan** or higher.
+
+- ✅ **All other features work on free plan** (settings, generation, quality checks, SEO)
+- ❌ **Automation/scheduling requires paid Vercel plan**
+
+**To enable automation:**
+1. Upgrade to Vercel Pro
+2. Rename `vercel.json.example` to `vercel.json`
+3. Deploy to Vercel
+
+You can still use **all other features** without automation!
+
+---
+
 ## 🔥 Before vs After
 
 ### Before
