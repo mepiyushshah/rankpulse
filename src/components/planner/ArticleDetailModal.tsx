@@ -121,7 +121,7 @@ export function ArticleDetailModal({
       open={open}
       onClose={onClose}
       title={article.target_keyword}
-      maxWidth="4xl"
+      maxWidth="2xl"
     >
       <div className="space-y-6">
         {/* Article Metadata */}
