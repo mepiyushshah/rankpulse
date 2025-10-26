@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       'conclusion': '- End with a strong conclusion that summarizes key points and includes a call-to-action'
     };
     const sectionsInstructions = settings.include_sections && Array.isArray(settings.include_sections)
-      ? settings.include_sections.map(s => sectionsMap[s]).filter(Boolean).join('\n')
+      ? settings.include_sections.map((s: string) => sectionsMap[s]).filter(Boolean).join('\n')
       : Object.values(sectionsMap).join('\n');
 
     // Build elements instruction
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       'expert_quotes': 'expert quotes or testimonials where relevant'
     };
     const includeElements = settings.include_elements && Array.isArray(settings.include_elements)
-      ? settings.include_elements.map(e => elementsMap[e]).filter(Boolean).join(', ')
+      ? settings.include_elements.map((e: string) => elementsMap[e]).filter(Boolean).join(', ')
       : 'bullet points, numbered lists, and blockquotes';
 
     // Build heading structure instruction
