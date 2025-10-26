@@ -339,9 +339,9 @@ export default function ContentPlannerPage() {
   const calendarDays = generateCalendarDays(year, month, firstDayOfMonth, daysInMonth);
 
   return (
-    <div className="p-6">
+    <div className="px-6 pb-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-5 border-b border-gray-200">
+      <div className="flex items-center justify-between mb-6 py-4 border-b border-gray-200">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Content Planner</h1>
           <p className="text-sm text-gray-500">
@@ -372,24 +372,22 @@ export default function ContentPlannerPage() {
       </div>
 
       {/* Month Navigation */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between mb-4">
+        <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-1 gap-1">
           <button
             onClick={goToPreviousMonth}
-            className="h-10 w-10 flex items-center justify-center bg-white border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg active:shadow-sm transition-all hover:scale-105 active:scale-95"
-            style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 -2px 0 0 rgba(0, 0, 0, 0.05)' }}
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
           >
-            <ChevronLeft className="h-5 w-5 text-gray-700" />
+            <ChevronLeft className="h-4 w-4 text-gray-600" />
           </button>
-          <h2 className="text-xl font-semibold text-gray-900 min-w-[180px] text-center">
+          <span className="text-base font-semibold text-gray-900 px-3 min-w-[140px] text-center">
             {monthName} {year}
-          </h2>
+          </span>
           <button
             onClick={goToNextMonth}
-            className="h-10 w-10 flex items-center justify-center bg-white border-2 border-gray-200 rounded-lg shadow-md hover:shadow-lg active:shadow-sm transition-all hover:scale-105 active:scale-95"
-            style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 -2px 0 0 rgba(0, 0, 0, 0.05)' }}
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
           >
-            <ChevronRight className="h-5 w-5 text-gray-700" />
+            <ChevronRight className="h-4 w-4 text-gray-600" />
           </button>
         </div>
 
@@ -545,36 +543,12 @@ function generateCalendarDays(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Previous month days
-  const prevMonthDays = new Date(year, month, 0).getDate();
-  for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-    const date = new Date(year, month - 1, prevMonthDays - i);
-    days.push({
-      date,
-      isCurrentMonth: false,
-      isToday: date.getTime() === today.getTime(),
-      isWeekend: date.getDay() === 0 || date.getDay() === 6,
-    });
-  }
-
-  // Current month days
+  // Only current month days - no previous or next month dates
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
     days.push({
       date,
       isCurrentMonth: true,
-      isToday: date.getTime() === today.getTime(),
-      isWeekend: date.getDay() === 0 || date.getDay() === 6,
-    });
-  }
-
-  // Next month days to fill the grid
-  const remainingDays = 42 - days.length; // 6 rows * 7 days
-  for (let day = 1; day <= remainingDays; day++) {
-    const date = new Date(year, month + 1, day);
-    days.push({
-      date,
-      isCurrentMonth: false,
       isToday: date.getTime() === today.getTime(),
       isWeekend: date.getDay() === 0 || date.getDay() === 6,
     });
