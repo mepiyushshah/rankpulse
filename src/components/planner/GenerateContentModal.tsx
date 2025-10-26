@@ -247,99 +247,103 @@ export function GenerateContentModal({
           )}
         </div>
 
-        {/* Select Competitors */}
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-900 mb-3">
-            Select Competitors
-          </label>
-          <button
-            onClick={() => setShowCompetitorDropdown(!showCompetitorDropdown)}
-            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-left hover:border-gray-300 transition-colors flex items-center justify-between"
-          >
-            <span className="text-gray-900">{getCompetitorLabel()}</span>
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-          </button>
-          {showCompetitorDropdown && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-              <button
-                onClick={() => {
-                  selectAllCompetitors();
-                  setShowCompetitorDropdown(false);
-                }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-50 text-primary font-medium border-b"
-              >
-                Select All
-              </button>
-              {availableCompetitors.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-gray-500">
-                  No competitors set. Add them in Settings.
-                </div>
-              ) : (
-                availableCompetitors.map((competitor) => (
-                  <label
-                    key={competitor}
-                    className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedCompetitors.includes(competitor)}
-                      onChange={() => toggleCompetitor(competitor)}
-                      className="h-4 w-4 text-primary rounded border-gray-300 mr-3"
-                    />
-                    <span className="text-gray-900">{competitor}</span>
-                  </label>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+        {/* Select Competitors - Only show if type includes competitors */}
+        {(generationType === 'competitors' || generationType === 'competitors_audiences') && (
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-900 mb-3">
+              Select Competitors
+            </label>
+            <button
+              onClick={() => setShowCompetitorDropdown(!showCompetitorDropdown)}
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-left hover:border-gray-300 transition-colors flex items-center justify-between"
+            >
+              <span className="text-gray-900">{getCompetitorLabel()}</span>
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            </button>
+            {showCompetitorDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <button
+                  onClick={() => {
+                    selectAllCompetitors();
+                    setShowCompetitorDropdown(false);
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 text-primary font-medium border-b"
+                >
+                  Select All
+                </button>
+                {availableCompetitors.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-500">
+                    No competitors set. Add them in Settings.
+                  </div>
+                ) : (
+                  availableCompetitors.map((competitor) => (
+                    <label
+                      key={competitor}
+                      className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCompetitors.includes(competitor)}
+                        onChange={() => toggleCompetitor(competitor)}
+                        className="h-4 w-4 text-primary rounded border-gray-300 mr-3"
+                      />
+                      <span className="text-gray-900">{competitor}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Select Target Audiences */}
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-900 mb-3">
-            Select Target Audiences
-          </label>
-          <button
-            onClick={() => setShowAudienceDropdown(!showAudienceDropdown)}
-            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-left hover:border-gray-300 transition-colors flex items-center justify-between"
-          >
-            <span className="text-gray-900">{getAudienceLabel()}</span>
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-          </button>
-          {showAudienceDropdown && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-              <button
-                onClick={() => {
-                  selectAllAudiences();
-                  setShowAudienceDropdown(false);
-                }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-50 text-primary font-medium border-b"
-              >
-                Select All
-              </button>
-              {availableAudiences.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-gray-500">
-                  No target audiences set. Add them in Settings.
-                </div>
-              ) : (
-                availableAudiences.map((audience) => (
-                  <label
-                    key={audience}
-                    className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedAudiences.includes(audience)}
-                      onChange={() => toggleAudience(audience)}
-                      className="h-4 w-4 text-primary rounded border-gray-300 mr-3"
-                    />
-                    <span className="text-gray-900">{audience}</span>
-                  </label>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+        {/* Select Target Audiences - Only show if type includes audiences */}
+        {(generationType === 'target_audiences' || generationType === 'competitors_audiences') && (
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-900 mb-3">
+              Select Target Audiences
+            </label>
+            <button
+              onClick={() => setShowAudienceDropdown(!showAudienceDropdown)}
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-left hover:border-gray-300 transition-colors flex items-center justify-between"
+            >
+              <span className="text-gray-900">{getAudienceLabel()}</span>
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            </button>
+            {showAudienceDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <button
+                  onClick={() => {
+                    selectAllAudiences();
+                    setShowAudienceDropdown(false);
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 text-primary font-medium border-b"
+                >
+                  Select All
+                </button>
+                {availableAudiences.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-500">
+                    No target audiences set. Add them in Settings.
+                  </div>
+                ) : (
+                  availableAudiences.map((audience) => (
+                    <label
+                      key={audience}
+                      className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAudiences.includes(audience)}
+                        onChange={() => toggleAudience(audience)}
+                        className="h-4 w-4 text-primary rounded border-gray-300 mr-3"
+                      />
+                      <span className="text-gray-900">{audience}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Number of Keywords */}
         <div>

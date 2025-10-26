@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { KeywordModal } from '@/components/keywords/KeywordModal';
 import { GenerateContentModal, GenerationConfig } from '@/components/planner/GenerateContentModal';
+import { ArticleDetailModal } from '@/components/planner/ArticleDetailModal';
 import { supabase } from '@/lib/supabase';
 import {
   ChevronLeft,
@@ -24,17 +25,21 @@ interface CalendarDay {
 interface Article {
   id: string;
   title: string;
+  content: string;
   target_keyword: string;
   content_type: string;
   search_volume: number;
   keyword_difficulty: number;
   scheduled_at: string;
+  status: string;
 }
 
 export default function ContentPlannerPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [keywordModalOpen, setKeywordModalOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [articleDetailOpen, setArticleDetailOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
@@ -105,11 +110,13 @@ export default function ContentPlannerPage() {
       const mappedArticles = (data || []).map((article: any) => ({
         id: article.id,
         title: article.title,
+        content: article.content || '',
         target_keyword: article.target_keyword || '',
         content_type: article.content_type || 'Article',
         search_volume: article.search_volume || 0,
         keyword_difficulty: article.keyword_difficulty || 0,
         scheduled_at: article.scheduled_at,
+        status: article.status || 'scheduled',
       }));
       setArticles(mappedArticles);
     }
@@ -335,6 +342,12 @@ export default function ContentPlannerPage() {
     setCurrentDate(new Date());
   };
 
+  // Handle article click
+  const handleArticleClick = (article: Article) => {
+    setSelectedArticle(article);
+    setArticleDetailOpen(true);
+  };
+
   // Generate calendar days
   const calendarDays = generateCalendarDays(year, month, firstDayOfMonth, daysInMonth);
 
@@ -410,6 +423,7 @@ export default function ContentPlannerPage() {
           <CalendarDayCell
             key={index}
             day={day}
+            onArticleClick={handleArticleClick}
             articles={articles.filter((article) => {
               const articleDate = new Date(article.scheduled_at);
               return (
@@ -437,12 +451,32 @@ export default function ContentPlannerPage() {
         currentMonth={currentDate}
         projectId={projectId}
       />
+
+      {/* Article Detail Modal */}
+      <ArticleDetailModal
+        open={articleDetailOpen}
+        onClose={() => {
+          setArticleDetailOpen(false);
+          setSelectedArticle(null);
+        }}
+        article={selectedArticle}
+        projectId={projectId}
+        onUpdate={loadArticles}
+      />
     </div>
   );
 }
 
 // Calendar Day Cell Component
-function CalendarDayCell({ day, articles }: { day: CalendarDay; articles: Article[] }) {
+function CalendarDayCell({
+  day,
+  articles,
+  onArticleClick
+}: {
+  day: CalendarDay;
+  articles: Article[];
+  onArticleClick: (article: Article) => void;
+}) {
   const dayNumber = day.date.getDate();
   const dayName = day.date.toLocaleDateString('en-US', { weekday: 'short' });
   const isToday = day.isToday;
@@ -490,7 +524,8 @@ function CalendarDayCell({ day, articles }: { day: CalendarDay; articles: Articl
           articles.map((article) => (
             <div
               key={article.id}
-              className={`${getDifficultyColor(article.keyword_difficulty)} border rounded-md p-2`}
+              onClick={() => onArticleClick(article)}
+              className={`${getDifficultyColor(article.keyword_difficulty)} border rounded-md p-2 cursor-pointer hover:shadow-md transition-shadow`}
             >
               {/* Title or Keyword */}
               <p className="text-xs font-bold text-gray-900 break-words">
