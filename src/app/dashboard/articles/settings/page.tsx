@@ -63,6 +63,87 @@ export default function ArticlesSettingsPage() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // Get user's project
+        const { data: projects } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1)
+
+        if (!projects || projects.length === 0) return
+
+        const projectId = projects[0].id
+
+        // Fetch saved settings
+        const response = await fetch(`/api/article-settings?projectId=${projectId}`)
+        if (!response.ok) return
+
+        const data = await response.json()
+
+        if (data.settings) {
+          // Map database fields to state
+          const dbSettings = data.settings
+          setSettings({
+            brandVoice: dbSettings.brand_voice || 'professional',
+            toneAttributes: dbSettings.tone_attributes || ['informative', 'engaging'],
+            writingPerspective: dbSettings.writing_perspective || 'first_person',
+            complexityLevel: dbSettings.complexity_level || 'intermediate',
+            minWordCount: dbSettings.min_word_count || 1500,
+            maxWordCount: dbSettings.max_word_count || 2500,
+            temperature: dbSettings.temperature || 0.7,
+            customInstructions: dbSettings.custom_instructions || '',
+            keywordDensityMin: dbSettings.keyword_density_min || 1.5,
+            keywordDensityMax: dbSettings.keyword_density_max || 2.5,
+            autoGenerateMeta: dbSettings.auto_generate_meta ?? true,
+            autoInternalLinks: dbSettings.auto_internal_links ?? true,
+            minInternalLinks: dbSettings.min_internal_links || 3,
+            maxInternalLinks: dbSettings.max_internal_links || 7,
+            enableSchemaMarkup: dbSettings.enable_schema_markup ?? true,
+            includeSections: dbSettings.include_sections || ['introduction', 'key_takeaways', 'main_content', 'faq', 'conclusion'],
+            headingStructure: dbSettings.heading_structure || 'hierarchical',
+            includeElements: dbSettings.include_elements || ['bullets', 'lists', 'blockquotes'],
+            autoGenerate: dbSettings.auto_generate ?? false,
+            articlesPerWeek: dbSettings.articles_per_week || 3,
+            preferredDays: dbSettings.preferred_days || [1, 3, 5],
+            publishTime: dbSettings.publish_time ? dbSettings.publish_time.substring(0, 5) : '09:00',
+            autoPublish: dbSettings.auto_publish ?? false,
+            generateAheadDays: dbSettings.generate_ahead_days || 14,
+            contentMix: dbSettings.content_mix || {
+              how_to: 30,
+              listicle: 25,
+              tutorial: 20,
+              comparison: 15,
+              case_study: 10
+            },
+            difficultyDistribution: dbSettings.difficulty_distribution || {
+              easy: 40,
+              medium: 40,
+              hard: 20
+            },
+            enableGrammarCheck: dbSettings.enable_grammar_check ?? true,
+            enablePlagiarismCheck: dbSettings.enable_plagiarism_check ?? true,
+            targetReadabilityScore: dbSettings.target_readability_score || 60,
+            autoFixIssues: dbSettings.auto_fix_issues ?? false,
+          })
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
 
   const tabs = [
     { id: 'content', label: 'Content & AI', icon: Sparkles },
@@ -142,6 +223,17 @@ export default function ArticlesSettingsPage() {
     if (confirm('Reset all settings to defaults?')) {
       window.location.reload()
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="px-6 pb-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AA45] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -757,6 +849,38 @@ export default function ArticlesSettingsPage() {
                       { value: 'code', label: 'Code Snippets' },
                       { value: 'tables', label: 'Tables' },
                       { value: 'internal_links', label: 'Internal Links' },
+                    ].map((element) => (
+                      <label key={element.value} className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer border border-gray-200">
+                        <input
+                          type="checkbox"
+                          checked={settings.includeElements.includes(element.value)}
+                          onChange={(e) => {
+                            const elements = e.target.checked
+                              ? [...settings.includeElements, element.value]
+                              : settings.includeElements.filter(el => el !== element.value)
+                            setSettings({ ...settings, includeElements: elements })
+                          }}
+                          className="w-4 h-4 text-[#00AA45] rounded accent-[#00AA45]"
+                        />
+                        <span className="text-xs text-gray-900">{element.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rich Media & Visual Elements
+                  </label>
+                  <p className="text-xs text-gray-600 mb-2">Automatically include relevant media to enhance article engagement</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'youtube_videos', label: 'YouTube Videos' },
+                      { value: 'infographics', label: 'Infographics' },
+                      { value: 'images', label: 'Relevant Images' },
+                      { value: 'diagrams', label: 'Diagrams/Charts' },
+                      { value: 'stats_boxes', label: 'Statistics Boxes' },
+                      { value: 'expert_quotes', label: 'Expert Quotes' },
                     ].map((element) => (
                       <label key={element.value} className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer border border-gray-200">
                         <input
