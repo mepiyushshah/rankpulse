@@ -22,48 +22,9 @@ export function ArticleViewer({ content }: ArticleViewerProps) {
     }
   }, [content]);
 
-  // Extract headings for table of contents
-  const tableOfContents = useMemo(() => {
-    const headingRegex = /^##\s+(.+)$/gm;
-    const headings: { text: string; id: string }[] = [];
-    let match;
-
-    while ((match = headingRegex.exec(content)) !== null) {
-      const text = match[1];
-      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      headings.push({ text, id });
-    }
-
-    return headings;
-  }, [content]);
-
   return (
     <div className="bg-gray-50">
       <div className="max-w-5xl mx-auto">
-        {/* Table of Contents */}
-        {tableOfContents.length > 0 && (
-          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-6 mb-8 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              Table of Contents
-            </h3>
-            <ul className="space-y-2">
-              {tableOfContents.map((heading, index) => (
-                <li key={index}>
-                  <a
-                    href={`#${heading.id}`}
-                    className="text-indigo-700 hover:text-indigo-900 hover:underline text-sm font-medium"
-                  >
-                    {heading.text}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {/* Article Content */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <article
