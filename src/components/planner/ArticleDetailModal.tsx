@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { ArticleViewer } from './ArticleViewer';
 import { Loader2, Sparkles, Edit2, Save, X } from 'lucide-react';
 import { marked } from 'marked';
 
@@ -38,20 +39,6 @@ export function ArticleDetailModal({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState('');
-
-  // Convert markdown to HTML for display - MUST be before conditional return
-  const contentHtml = useMemo(() => {
-    if (!article?.content) return '';
-    try {
-      return marked(article.content, {
-        breaks: true,
-        gfm: true
-      }) as string;
-    } catch (error) {
-      console.error('Error converting markdown:', error);
-      return article.content;
-    }
-  }, [article?.content]);
 
   if (!article) return null;
 
@@ -90,9 +77,20 @@ export function ArticleDetailModal({
   };
 
   const handleStartEdit = () => {
-    // Use the HTML version for editing
-    setEditedContent(contentHtml);
-    setIsEditing(true);
+    // Convert markdown to HTML for editing
+    if (!article?.content) return;
+    try {
+      const html = marked(article.content, {
+        breaks: true,
+        gfm: true
+      }) as string;
+      setEditedContent(html);
+      setIsEditing(true);
+    } catch (error) {
+      console.error('Error converting markdown:', error);
+      setEditedContent(article.content);
+      setIsEditing(true);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -246,29 +244,7 @@ export function ArticleDetailModal({
               />
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="max-w-4xl mx-auto px-16 py-12">
-                <article
-                  className="prose prose-xl prose-slate max-w-none
-                    prose-headings:font-bold prose-headings:text-gray-900 prose-headings:tracking-tight
-                    prose-h1:text-4xl prose-h1:mb-6 prose-h1:mt-8
-                    prose-h2:text-3xl prose-h2:mb-5 prose-h2:mt-10 prose-h2:border-b prose-h2:border-gray-200 prose-h2:pb-3
-                    prose-h3:text-2xl prose-h3:mb-4 prose-h3:mt-8
-                    prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-6 prose-p:text-lg
-                    prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:text-indigo-800 hover:prose-a:underline
-                    prose-strong:text-gray-900 prose-strong:font-semibold
-                    prose-ul:my-6 prose-ul:space-y-2
-                    prose-ol:my-6 prose-ol:space-y-2
-                    prose-li:text-gray-700 prose-li:text-lg prose-li:leading-relaxed
-                    prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-indigo-50 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-gray-700
-                    prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-indigo-600 prose-code:font-mono
-                    prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-lg prose-pre:p-6
-                    prose-img:rounded-lg prose-img:shadow-lg
-                  "
-                  dangerouslySetInnerHTML={{ __html: contentHtml }}
-                />
-              </div>
-            </div>
+            <ArticleViewer content={article.content} />
           )}
         </div>
 

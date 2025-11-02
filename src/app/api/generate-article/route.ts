@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       : 'Use flat heading structure (H2 only for all sections)';
 
     // Create detailed AI prompt for article generation
-    const prompt = `You are an expert SEO content writer. Write a comprehensive, high-quality article based on the following requirements:
+    const prompt = `You are an expert SEO content writer. Write a comprehensive, high-quality article based on the following requirements.
 
 **Business Context:**
 - Company: ${project.name}
@@ -149,12 +149,70 @@ ${sectionsInstructions}
 - Write in a clear, scannable format with short paragraphs
 - Ensure the content provides genuine value and answers user intent
 
-**Output Format:**
-Write the article in markdown format with proper headings and formatting.
-DO NOT include a meta title or description - just the article content itself.
-Use the markers [INTERNAL:], [VIDEO:], [INFOGRAPHIC:], [IMAGE:], [DIAGRAM:] etc. where you suggest rich media.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Begin writing the article now:`;
+**MANDATORY OUTPUT FORMAT - YOU MUST FOLLOW THIS EXACTLY:**
+
+Write the article in MARKDOWN format. You MUST use proper markdown headings (##, ###, ####).
+
+REQUIRED STRUCTURE - DO NOT SKIP ANY HEADINGS:
+
+[1-2 engaging introduction paragraphs with NO heading - hook the reader immediately]
+
+## [First Major H2 Section - MUST be present]
+[2-3 short paragraphs explaining this section]
+
+### [H3 Subsection under first H2]
+[Content here with short paragraphs]
+
+### [Another H3 Subsection]
+[Content]
+
+## [Second Major H2 Section - MUST be present]
+[Content with short paragraphs]
+
+### [H3 Subsection]
+[Content]
+
+## [Third Major H2 Section - MUST be present]
+[Continue this pattern for 5-7 major H2 sections minimum]
+
+## Frequently Asked Questions
+
+### [Question 1 as H3]
+[Answer in 2-3 sentences]
+
+### [Question 2 as H3]
+[Answer]
+
+### [Question 3 as H3]
+[Answer]
+
+## Conclusion
+[Strong concluding paragraph with call-to-action]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**CRITICAL FORMATTING RULES - FAILURE TO FOLLOW WILL RESULT IN REJECTION:**
+
+✓ ALWAYS use ## for main section headings (H2) - minimum 5 sections
+✓ ALWAYS use ### for subsections (H3)
+✓ Use #### for detailed points (H4) if needed
+✓ Keep paragraphs SHORT (2-4 sentences maximum)
+✓ Add blank lines between ALL paragraphs
+✓ Use bullet points (-) and numbered lists (1.) frequently
+✓ Use blockquotes (>) for important insights
+✓ Start with intro paragraphs (NO heading for intro)
+✓ Include ## Frequently Asked Questions section with ### for each Q&A
+✓ End with ## Conclusion section
+
+✗ DO NOT write walls of text without headings
+✗ DO NOT skip the heading hierarchy
+✗ DO NOT write long paragraphs
+✗ DO NOT include meta title or description
+✗ DO NOT use # (H1) - only ##, ###, ####
+
+Begin writing the article NOW in proper markdown format:`;
 
     // Call AI to generate article content using saved temperature setting
     const completion = await groq.chat.completions.create({
@@ -169,6 +227,12 @@ Begin writing the article now:`;
     if (!articleContent) {
       throw new Error('Failed to generate article content');
     }
+
+    // DEBUG: Log the first 500 characters to see what we got
+    console.log('=== AI GENERATED CONTENT (first 500 chars) ===');
+    console.log(articleContent.substring(0, 500));
+    console.log('=== HAS H2 HEADINGS? ===', articleContent.includes('##'));
+    console.log('=== HAS H3 HEADINGS? ===', articleContent.includes('###'));
 
     // Generate a proper title from the keyword
     const titlePrompt = `Based on the keyword "${keyword}" and content type "${contentType || 'Article'}", generate a compelling, SEO-friendly article title.
