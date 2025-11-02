@@ -4,10 +4,11 @@ import { useMemo } from 'react';
 import { marked } from 'marked';
 
 interface ArticleViewerProps {
+  title?: string;
   content: string;
 }
 
-export function ArticleViewer({ content }: ArticleViewerProps) {
+export function ArticleViewer({ title, content }: ArticleViewerProps) {
   // Convert markdown to HTML
   const contentHtml = useMemo(() => {
     if (!content) return '';
@@ -27,10 +28,10 @@ export function ArticleViewer({ content }: ArticleViewerProps) {
       <div className="max-w-5xl mx-auto">
         {/* Article Content */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <article
-            className="article-content px-8 py-10 md:px-12 md:py-12"
-            dangerouslySetInnerHTML={{ __html: contentHtml }}
-          />
+          <article className="article-content px-8 py-10 md:px-12 md:py-12">
+            {title && <h1 className="article-title">{title}</h1>}
+            <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
+          </article>
         </div>
       </div>
 
@@ -39,6 +40,16 @@ export function ArticleViewer({ content }: ArticleViewerProps) {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
           color: #1f2937;
           line-height: 1.75;
+        }
+
+        /* Main Title */
+        .article-title {
+          font-size: 2.5rem;
+          font-weight: 800;
+          color: #111827;
+          line-height: 1.2;
+          margin-bottom: 2rem;
+          letter-spacing: -0.025em;
         }
 
         /* Headings */
@@ -79,13 +90,6 @@ export function ArticleViewer({ content }: ArticleViewerProps) {
           line-height: 1.8;
           color: #374151;
           margin-bottom: 1.25rem;
-        }
-
-        /* First paragraph styling */
-        .article-content > p:first-of-type {
-          font-size: 1.1875rem;
-          line-height: 1.75;
-          color: #1f2937;
         }
 
         /* Links */

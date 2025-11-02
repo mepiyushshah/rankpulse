@@ -564,7 +564,7 @@ export default function ContentPlannerPage() {
                 />
               </div>
             ) : (
-              <ArticleViewer content={selectedArticle.content} />
+              <ArticleViewer title={selectedArticle.title} content={selectedArticle.content} />
             )}
 
             {/* Action Footer */}

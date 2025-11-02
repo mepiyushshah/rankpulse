@@ -244,7 +244,7 @@ export function ArticleDetailModal({
               />
             </div>
           ) : (
-            <ArticleViewer content={article.content} />
+            <ArticleViewer title={article.title} content={article.content} />
           )}
         </div>
 

@@ -235,24 +235,57 @@ Begin writing the article NOW in proper markdown format:`;
     console.log('=== HAS H3 HEADINGS? ===', articleContent.includes('###'));
 
     // Generate a proper title from the keyword
-    const titlePrompt = `Based on the keyword "${keyword}" and content type "${contentType || 'Article'}", generate a compelling, SEO-friendly article title.
+    const titlePrompt = `Create a descriptive, SEO-optimized title for: "${keyword}"
 
-Requirements:
-- Should be engaging and click-worthy
-- Include the target keyword naturally
-- Keep it under 60 characters for SEO
-- Match the content type (${contentType || 'Article'})
+ABSOLUTE REQUIREMENTS (MUST FOLLOW):
+- Title MUST be between 50-60 characters (aim for 53-58 for best results)
+- Count every character including spaces before submitting
+- Include the keyword "${keyword}" naturally
+- Make it LONG and DESCRIPTIVE - add context like year, guide type, or scope
+- Preferred formats: "[Topic]: 2025 Complete Guide" or "[Topic]: [Descriptor]"
+- Use year (2025), guide descriptors (Complete Guide, Expert Tips, etc.)
+- NO quotation marks, NO special characters
+- Return ONLY the raw title text
 
-Return ONLY the title text, nothing else.`;
+EXCELLENT Examples (longer, descriptive, 50-60 chars):
+- "How to Make a Landing Page Convert: 2025 Complete Guide" (55 chars) ← PERFECT
+- "Best Website Builders for Startups: 2025 Expert Review" (56 chars)
+- "Top Email Marketing Tools: Complete 2025 Comparison" (52 chars)
+
+BAD Examples:
+- Too short: "How to Make a Landing Page Convert Fast" (43 chars) ← needs more
+- Too long: "Unlock Fast Landing Page Creation in 2025 Discover How to Build Pages" (71 chars)
+
+Create ONE LONG, descriptive title NOW (50-60 characters):`;
 
     const titleCompletion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: titlePrompt }],
       model: 'llama-3.3-70b-versatile',
-      temperature: 0.7,
-      max_tokens: 100,
+      temperature: 0.85,
+      max_tokens: 80,
     });
 
-    const articleTitle = titleCompletion.choices[0]?.message?.content?.trim() || `${contentType}: ${keyword}`;
+    let articleTitle = titleCompletion.choices[0]?.message?.content?.trim() || `${contentType}: ${keyword}`;
+
+    // Remove any quotation marks that might be in the title
+    articleTitle = articleTitle.replace(/^["']|["']$/g, '').replace(/[""'']/g, '');
+
+    // STRICT: Enforce 60 character limit
+    if (articleTitle.length > 60) {
+      // Try to truncate at last complete word under 60 chars
+      let truncated = articleTitle.substring(0, 60);
+      const lastSpaceIndex = truncated.lastIndexOf(' ');
+
+      if (lastSpaceIndex > 40) {
+        // If we can fit a reasonable amount, truncate at last word
+        articleTitle = truncated.substring(0, lastSpaceIndex).trim();
+      } else {
+        // Otherwise hard truncate at 60
+        articleTitle = truncated.trim();
+      }
+    }
+
+    console.log(`=== GENERATED TITLE (${articleTitle.length} chars) ===`, articleTitle);
 
     // Generate meta description if enabled
     let metaDescription = '';
