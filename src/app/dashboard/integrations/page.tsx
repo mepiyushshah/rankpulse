@@ -286,11 +286,11 @@ export default function IntegrationsPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="px-6 pb-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Integrations</h1>
-        <p className="text-gray-600">
+      <div className="mb-6 py-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Integrations</h1>
+        <p className="text-sm text-gray-500">
           Connect your content management platforms to automatically publish articles.
         </p>
       </div>

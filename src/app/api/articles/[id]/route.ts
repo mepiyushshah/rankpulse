@@ -36,3 +36,35 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient();
+    const { id } = await params;
+
+    // Delete article from database
+    const { error } = await supabase
+      .from('articles')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting article:', error);
+      throw new Error('Failed to delete article');
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Article deleted successfully',
+    });
+  } catch (error: any) {
+    console.error('Error deleting article:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to delete article' },
+      { status: 500 }
+    );
+  }
+}
