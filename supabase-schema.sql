@@ -63,10 +63,16 @@ CREATE POLICY "Users can delete their own projects"
 CREATE TABLE cms_connections (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
-  platform TEXT NOT NULL CHECK (platform IN ('wordpress', 'webflow', 'shopify')),
-  api_url TEXT NOT NULL,
-  api_key TEXT NOT NULL, -- TODO: Encrypt this in production
+  platform TEXT NOT NULL CHECK (platform IN ('wordpress', 'wordpress_com', 'webflow', 'shopify', 'wix', 'notion', 'framer', 'webhook')),
+  name TEXT, -- Custom name for this connection
+  api_url TEXT, -- Optional for some platforms
+  api_key TEXT, -- TODO: Encrypt this in production
+  api_secret TEXT, -- For platforms that need it (like Notion)
+  site_id TEXT, -- For platforms like Webflow, Framer
+  webhook_url TEXT, -- For webhook integration
+  config JSONB, -- Additional platform-specific configuration
   status TEXT DEFAULT 'active' NOT NULL,
+  last_tested_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
