@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { KeywordModal } from '@/components/keywords/KeywordModal';
 import { GenerateContentModal, GenerationConfig } from '@/components/planner/GenerateContentModal';
-import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { TipTapArticleEditor } from '@/components/planner/TipTapArticleEditor';
 import { ArticleViewer } from '@/components/planner/ArticleViewer';
 import { supabase } from '@/lib/supabase';
 import {
@@ -556,13 +556,11 @@ export default function ContentPlannerPage() {
                 </Button>
               </div>
             ) : isEditing ? (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                <RichTextEditor
-                  value={editedContent}
-                  onChange={setEditedContent}
-                  placeholder="Write your article content here..."
-                />
-              </div>
+              <TipTapArticleEditor
+                title={selectedArticle.title}
+                content={editedContent}
+                onChange={setEditedContent}
+              />
             ) : (
               <ArticleViewer title={selectedArticle.title} content={selectedArticle.content} />
             )}
