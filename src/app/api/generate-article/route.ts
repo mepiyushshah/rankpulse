@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import Groq from 'groq-sdk';
+import { getToolScreenshot, extractToolNames } from '@/lib/screenshot-service';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -113,8 +114,177 @@ export async function POST(request: Request) {
       ? 'Use hierarchical heading structure (H2 for main sections, H3 for subsections, H4 for details)'
       : 'Use flat heading structure (H2 only for all sections)';
 
+    // Detect if this should be a listicle based on keyword patterns
+    const listiclePatterns = [
+      /^best\s+/i,
+      /^top\s+\d+/i,
+      /^top\s+/i,
+      /\s+tools?\s*/i,
+      /\s+software\s*/i,
+      /\s+platforms?\s*/i,
+      /\s+apps?\s*/i,
+      /\s+services?\s*/i,
+      /\s+vs\s+/i,
+      /\s+comparison/i,
+      /\s+alternatives?/i,
+      /\s+review/i,
+    ];
+
+    const isListicle = listiclePatterns.some(pattern => pattern.test(keyword)) ||
+                       (contentType && /listicle|comparison|review|tools|software/i.test(contentType));
+
     // Create detailed AI prompt for article generation
-    const prompt = `You are an expert SEO content writer. Write a comprehensive, high-quality article based on the following requirements.
+    let prompt = '';
+
+    if (isListicle) {
+      // LISTICLE-SPECIFIC PROMPT
+      prompt = `You are an expert SEO content writer specializing in product reviews and comparisons. Write a comprehensive LISTICLE article based on the following requirements.
+
+**Business Context:**
+- Company: ${project.name}
+- Description: ${project.description || 'Not provided'}
+${project.competitors && Array.isArray(project.competitors) && project.competitors.length > 0 ? `- Competitors: ${project.competitors.join(', ')}` : ''}
+${project.target_audiences && Array.isArray(project.target_audiences) && project.target_audiences.length > 0 ? `- Target Audience: ${project.target_audiences.join(', ')}` : ''}
+
+**Article Requirements:**
+- Target Keyword: "${keyword}"
+- Content Type: LISTICLE (Tools/Software Comparison)
+- Brand Voice: ${settings.brand_voice}
+- Tone: ${toneDescription}
+- Word Count: ${settings.min_word_count}-${settings.max_word_count} words
+- Complexity: ${settings.complexity_level}
+
+**Writing Style:**
+- ${perspectiveInstruction}
+- ${complexityInstruction}
+${settings.custom_instructions ? `\n**Custom Instructions:**\n${settings.custom_instructions}\n` : ''}
+
+**SEO Requirements:**
+- Target keyword density: ${settings.keyword_density_min}%-${settings.keyword_density_max}%
+- Use the target keyword naturally in the introduction, headings, and conclusion
+- Include related keywords and semantic variations
+- Write in a clear, scannable format with short paragraphs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**MANDATORY LISTICLE FORMAT - YOU MUST FOLLOW THIS EXACTLY:**
+
+Write the article in MARKDOWN format as a NUMBERED LISTICLE.
+
+REQUIRED STRUCTURE:
+
+[1-2 engaging introduction paragraphs with NO heading - explain what this list covers and why it matters]
+
+## Quick Comparison Table
+
+| Tool/Software | Best For | Pricing | Rating |
+|---------------|----------|---------|--------|
+| [Tool 1] | [Use case] | [Price] | ⭐⭐⭐⭐⭐ |
+| [Tool 2] | [Use case] | [Price] | ⭐⭐⭐⭐ |
+[Add 5-10 tools in table]
+
+## 1. [Tool/Software Name 1] - [One-line Description]
+
+[2-3 paragraphs describing the tool/software in detail]
+
+**Key Features:**
+- Feature 1 with brief explanation
+- Feature 2 with brief explanation
+- Feature 3 with brief explanation
+- Feature 4 with brief explanation
+
+**Pros:**
+- ✅ Pro 1
+- ✅ Pro 2
+- ✅ Pro 3
+
+**Cons:**
+- ❌ Con 1
+- ❌ Con 2
+
+**Pricing:** [Detailed pricing information with tiers if available]
+
+**Best For:** [Specific use cases or user types this tool is ideal for]
+
+---
+
+## 2. [Tool/Software Name 2] - [One-line Description]
+
+[Continue the same structure for each tool - aim for 7-10 tools total]
+
+**Key Features:**
+[4-5 features]
+
+**Pros:**
+[3-4 pros]
+
+**Cons:**
+[2-3 cons]
+
+**Pricing:**
+[Details]
+
+**Best For:**
+[Use cases]
+
+---
+
+[Continue this pattern for tools 3-10]
+
+## How to Choose the Right [Tool Type]
+
+[2-3 paragraphs with guidance on selection criteria]
+
+**Consider these factors:**
+- Factor 1
+- Factor 2
+- Factor 3
+- Factor 4
+
+## Frequently Asked Questions
+
+### [Question 1 about the tools/topic]
+[Answer in 2-3 sentences]
+
+### [Question 2]
+[Answer]
+
+### [Question 3]
+[Answer]
+
+### [Question 4]
+[Answer]
+
+## Conclusion
+
+[Strong concluding paragraph summarizing the top picks and helping readers make a decision]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**CRITICAL LISTICLE RULES:**
+
+✓ MUST use numbered headings: "## 1. Tool Name", "## 2. Tool Name", etc.
+✓ Include 7-10 tools/items minimum in the listicle
+✓ ALWAYS include comparison table at the beginning
+✓ ALWAYS include Pros/Cons for each item
+✓ ALWAYS include specific pricing information
+✓ ALWAYS include "Best For" section for each item
+✓ Use horizontal rules (---) between each numbered item
+✓ Keep descriptions factual and specific
+✓ Include "How to Choose" guidance section
+✓ End with FAQ and Conclusion sections
+
+✗ DO NOT use generic descriptions
+✗ DO NOT skip pricing information
+✗ DO NOT skip pros and cons
+✗ DO NOT use regular H2 headings - use numbered format (## 1., ## 2., etc.)
+✗ DO NOT include meta title or description in content
+✗ DO NOT use # (H1) - only ##, ###, ####
+
+Begin writing the LISTICLE article NOW in proper markdown format:`;
+    } else {
+      // REGULAR ARTICLE PROMPT (existing)
+      prompt = `You are an expert SEO content writer. Write a comprehensive, high-quality article based on the following requirements.
 
 **Business Context:**
 - Company: ${project.name}
@@ -213,6 +383,7 @@ REQUIRED STRUCTURE - DO NOT SKIP ANY HEADINGS:
 ✗ DO NOT use # (H1) - only ##, ###, ####
 
 Begin writing the article NOW in proper markdown format:`;
+    }
 
     // Call AI to generate article content using saved temperature setting
     const completion = await groq.chat.completions.create({
@@ -222,7 +393,7 @@ Begin writing the article NOW in proper markdown format:`;
       max_tokens: 6000, // Increased for longer articles
     });
 
-    const articleContent = completion.choices[0]?.message?.content || '';
+    let articleContent = completion.choices[0]?.message?.content || '';
 
     if (!articleContent) {
       throw new Error('Failed to generate article content');
@@ -233,6 +404,48 @@ Begin writing the article NOW in proper markdown format:`;
     console.log(articleContent.substring(0, 500));
     console.log('=== HAS H2 HEADINGS? ===', articleContent.includes('##'));
     console.log('=== HAS H3 HEADINGS? ===', articleContent.includes('###'));
+
+    // If this is a listicle, add screenshots for each tool
+    if (isListicle) {
+      console.log('=== DETECTED LISTICLE - ADDING SCREENSHOTS ===');
+
+      const toolNames = extractToolNames(articleContent);
+      console.log(`Found ${toolNames.length} tools to screenshot`);
+
+      // Process screenshots for each tool (limit to first 10 to avoid too many API calls)
+      const toolsToProcess = toolNames.slice(0, 10);
+
+      for (const toolName of toolsToProcess) {
+        console.log(`Processing screenshot for: ${toolName}`);
+
+        const screenshot = await getToolScreenshot(toolName);
+
+        if (screenshot.success && screenshot.imageUrl) {
+          // Find the tool's heading and insert image after the description paragraph
+          const toolHeadingRegex = new RegExp(`(##\\s+\\d+\\.\\s+${toolName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^\\n]*\\n\\n[^\\n]+(?:\\n[^\\n]+)*?)\\n\\n`, 'i');
+
+          const match = articleContent.match(toolHeadingRegex);
+
+          if (match) {
+            const insertPosition = match.index! + match[0].length;
+            const imageMarkdown = `![${toolName} Screenshot](${screenshot.imageUrl})\n\n`;
+
+            articleContent =
+              articleContent.slice(0, insertPosition) +
+              imageMarkdown +
+              articleContent.slice(insertPosition);
+
+            console.log(`✅ Added screenshot for ${toolName}`);
+          } else {
+            console.log(`⚠️ Could not find insertion point for ${toolName}`);
+          }
+        } else {
+          console.log(`❌ Failed to get screenshot for ${toolName}: ${screenshot.error}`);
+        }
+      }
+
+      console.log('=== SCREENSHOT PROCESSING COMPLETE ===');
+    }
 
     // Generate a proper title from the keyword
     const titlePrompt = `Create a descriptive, SEO-optimized title for: "${keyword}"

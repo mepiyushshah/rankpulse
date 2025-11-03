@@ -1,36 +1,199 @@
 'use client';
 
-import { useMemo } from 'react';
-import { marked } from 'marked';
+import { useRef, useEffect } from 'react';
+import {
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Link,
+  Image,
+  Heading1,
+  Heading2,
+  Heading3,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Code,
+  Quote,
+} from 'lucide-react';
 
-interface ArticleViewerProps {
+interface InlineArticleEditorProps {
   title?: string;
   content: string;
+  onChange: (content: string) => void;
 }
 
-export function ArticleViewer({ title, content }: ArticleViewerProps) {
-  // Convert markdown to HTML
-  const contentHtml = useMemo(() => {
-    if (!content) return '';
-    try {
-      return marked(content, {
-        breaks: true,
-        gfm: true,
-      }) as string;
-    } catch (error) {
-      console.error('Error converting markdown:', error);
-      return content;
+export function InlineArticleEditor({ title, content, onChange }: InlineArticleEditorProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (editorRef.current && content) {
+      editorRef.current.innerHTML = content;
     }
-  }, [content]);
+  }, []);
+
+  const execCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    editorRef.current?.focus();
+    handleContentChange();
+  };
+
+  const handleContentChange = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const insertHeading = (level: number) => {
+    execCommand('formatBlock', `h${level}`);
+  };
+
+  const createLink = () => {
+    const url = prompt('Enter the URL:');
+    if (url) {
+      execCommand('createLink', url);
+    }
+  };
+
+  const insertImage = () => {
+    const url = prompt('Enter the image URL:');
+    if (url) {
+      execCommand('insertImage', url);
+    }
+  };
+
+  const toolbarButtons = [
+    {
+      icon: Bold,
+      label: 'Bold',
+      action: () => execCommand('bold'),
+    },
+    {
+      icon: Italic,
+      label: 'Italic',
+      action: () => execCommand('italic'),
+    },
+    {
+      icon: Underline,
+      label: 'Underline',
+      action: () => execCommand('underline'),
+    },
+    { divider: true },
+    {
+      icon: Heading1,
+      label: 'H1',
+      action: () => insertHeading(1),
+    },
+    {
+      icon: Heading2,
+      label: 'H2',
+      action: () => insertHeading(2),
+    },
+    {
+      icon: Heading3,
+      label: 'H3',
+      action: () => insertHeading(3),
+    },
+    { divider: true },
+    {
+      icon: AlignLeft,
+      label: 'Align Left',
+      action: () => execCommand('justifyLeft'),
+    },
+    {
+      icon: AlignCenter,
+      label: 'Align Center',
+      action: () => execCommand('justifyCenter'),
+    },
+    {
+      icon: AlignRight,
+      label: 'Align Right',
+      action: () => execCommand('justifyRight'),
+    },
+    {
+      icon: AlignJustify,
+      label: 'Justify',
+      action: () => execCommand('justifyFull'),
+    },
+    { divider: true },
+    {
+      icon: List,
+      label: 'Bullet List',
+      action: () => execCommand('insertUnorderedList'),
+    },
+    {
+      icon: ListOrdered,
+      label: 'Numbered List',
+      action: () => execCommand('insertOrderedList'),
+    },
+    { divider: true },
+    {
+      icon: Link,
+      label: 'Insert Link',
+      action: createLink,
+    },
+    {
+      icon: Image,
+      label: 'Insert Image',
+      action: insertImage,
+    },
+    {
+      icon: Quote,
+      label: 'Blockquote',
+      action: () => execCommand('formatBlock', 'blockquote'),
+    },
+    {
+      icon: Code,
+      label: 'Code Block',
+      action: () => execCommand('formatBlock', 'pre'),
+    },
+  ];
 
   return (
     <div className="bg-gray-50">
       <div className="max-w-5xl mx-auto">
-        {/* Article Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Toolbar */}
+        <div className="bg-white border border-gray-200 rounded-t-xl p-3 flex flex-wrap items-center gap-2 sticky top-0 z-10 shadow-sm">
+          {toolbarButtons.map((button, index) => {
+            if ('divider' in button) {
+              return (
+                <div
+                  key={`divider-${index}`}
+                  className="w-px h-6 bg-gray-300"
+                />
+              );
+            }
+
+            const Icon = button.icon;
+            return (
+              <button
+                key={index}
+                type="button"
+                onClick={button.action}
+                className="p-2 hover:bg-gray-100 hover:text-gray-900 rounded transition-all text-gray-600"
+                title={button.label}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Article Content - Editable */}
+        <div className="bg-white border-x border-b border-gray-200 rounded-b-xl shadow-sm overflow-hidden">
           <article className="article-content px-8 py-10 md:px-12 md:py-12">
             {title && <h1 className="article-title">{title}</h1>}
-            <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
+            <div
+              ref={editorRef}
+              contentEditable
+              onInput={handleContentChange}
+              onBlur={handleContentChange}
+              className="focus:outline-none min-h-[400px]"
+              suppressContentEditableWarning
+            />
           </article>
         </div>
       </div>
@@ -59,6 +222,8 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
           color: #111827;
           margin-top: 3rem;
           margin-bottom: 1.25rem;
+          padding-bottom: 0.75rem;
+          border-bottom: 3px solid #e0e7ff;
           scroll-margin-top: 2rem;
         }
 
@@ -122,7 +287,7 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
         }
 
         .article-content ul li::marker {
-          color: #374151;
+          color: #6366f1;
         }
 
         /* Blockquotes */
@@ -214,6 +379,11 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
           height: 2px;
           background: linear-gradient(to right, transparent, #e5e7eb, transparent);
           margin: 3rem 0;
+        }
+
+        /* Contenteditable focus state */
+        [contenteditable]:focus {
+          outline: none;
         }
       `}</style>
     </div>
