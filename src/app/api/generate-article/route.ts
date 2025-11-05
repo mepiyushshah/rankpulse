@@ -545,10 +545,18 @@ Return ONLY the meta description text, nothing else.`;
       };
     }
 
+    // Generate slug from keyword
+    const slug = keyword.toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-')     // Replace spaces with hyphens
+      .replace(/--+/g, '-')     // Replace multiple hyphens with single hyphen
+      .trim();
+
     // Update article in database with all generated content
     const updateData: any = {
       title: articleTitle,
       content: articleContent,
+      slug: slug,
       status: 'draft',
       updated_at: new Date().toISOString(),
     };
@@ -575,6 +583,7 @@ Return ONLY the meta description text, nothing else.`;
       success: true,
       title: articleTitle,
       content: articleContent,
+      slug: slug,
       metaDescription,
       schemaMarkup,
     });

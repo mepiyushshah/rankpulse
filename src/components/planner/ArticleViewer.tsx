@@ -169,38 +169,24 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
           width: 100%;
           border-collapse: collapse;
           margin: 2rem 0;
-          border-radius: 0.5rem;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .article-content thead {
-          background: linear-gradient(to right, #E6F7EE, #D4F1E3);
+          border: 1px solid #e5e7eb;
         }
 
         .article-content th {
-          padding: 1rem 1.25rem;
+          padding: 0.75rem 1rem;
           text-align: left;
           font-weight: 600;
           font-size: 0.9375rem;
           color: #111827;
-          border-bottom: 2px solid #00AA45;
+          background-color: #f9fafb;
+          border: 1px solid #e5e7eb;
         }
 
         .article-content td {
-          padding: 1rem 1.25rem;
+          padding: 0.75rem 1rem;
           font-size: 0.9375rem;
           color: #374151;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .article-content tbody tr:hover {
-          background-color: #f9fafb;
-          transition: background-color 0.2s;
-        }
-
-        .article-content tbody tr:last-child td {
-          border-bottom: none;
+          border: 1px solid #e5e7eb;
         }
 
         /* Strong/Bold */

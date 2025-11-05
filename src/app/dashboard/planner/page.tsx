@@ -39,6 +39,8 @@ interface Article {
   keyword_difficulty: number;
   scheduled_at: string;
   status: string;
+  slug?: string;
+  meta_description?: string;
 }
 
 export default function ContentPlannerPage() {
@@ -54,6 +56,10 @@ export default function ContentPlannerPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [editedContent, setEditedContent] = useState('');
   const [editedTitle, setEditedTitle] = useState('');
+  const [editedSlug, setEditedSlug] = useState('');
+  const [editedMetaDescription, setEditedMetaDescription] = useState('');
+  const [isEditingMeta, setIsEditingMeta] = useState(false);
+  const [isSavingMeta, setIsSavingMeta] = useState(false);
 
   // Load project and articles on mount and when month changes
   useEffect(() => {
@@ -128,6 +134,8 @@ export default function ContentPlannerPage() {
         keyword_difficulty: article.keyword_difficulty || 0,
         scheduled_at: article.scheduled_at,
         status: article.status || 'scheduled',
+        slug: article.slug || '',
+        meta_description: article.meta_description || '',
       }));
       setArticles(mappedArticles);
     }
@@ -411,6 +419,12 @@ export default function ContentPlannerPage() {
     // Set the title for editing
     setEditedTitle(selectedArticle.title || selectedArticle.target_keyword);
 
+    // Set slug (default to target_keyword if not set)
+    setEditedSlug(selectedArticle.slug || selectedArticle.target_keyword.toLowerCase().replace(/\s+/g, '-'));
+
+    // Set meta description (default to empty if not set)
+    setEditedMetaDescription(selectedArticle.meta_description || '');
+
     // Check if content is already HTML (contains HTML tags)
     const isHTML = /<[a-z][\s\S]*>/i.test(selectedArticle.content);
 
@@ -440,6 +454,8 @@ export default function ContentPlannerPage() {
     setIsEditing(false);
     setEditedContent('');
     setEditedTitle('');
+    setEditedSlug('');
+    setEditedMetaDescription('');
   };
 
   // Handle save edit
@@ -454,6 +470,8 @@ export default function ContentPlannerPage() {
         body: JSON.stringify({
           title: editedTitle,
           content: editedContent,
+          slug: editedSlug,
+          meta_description: editedMetaDescription,
         }),
       });
 
@@ -473,6 +491,52 @@ export default function ContentPlannerPage() {
       alert(error.message || 'Failed to save changes');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Handle meta description edit
+  const handleStartEditMeta = () => {
+    if (!selectedArticle) return;
+    setEditedSlug(selectedArticle.slug || selectedArticle.target_keyword.toLowerCase().replace(/\s+/g, '-'));
+    setEditedMetaDescription(selectedArticle.meta_description || '');
+    setIsEditingMeta(true);
+  };
+
+  const handleCancelEditMeta = () => {
+    setIsEditingMeta(false);
+    setEditedSlug('');
+    setEditedMetaDescription('');
+  };
+
+  const handleSaveMeta = async () => {
+    if (!selectedArticle) return;
+
+    setIsSavingMeta(true);
+    try {
+      const response = await fetch(`/api/articles/${selectedArticle.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: editedSlug,
+          meta_description: editedMetaDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save metadata');
+      }
+
+      alert('Metadata saved successfully!');
+      setIsEditingMeta(false);
+      await loadArticles();
+      const updatedArticle = articles.find(a => a.id === selectedArticle.id);
+      if (updatedArticle) {
+        setSelectedArticle(updatedArticle);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to save metadata');
+    } finally {
+      setIsSavingMeta(false);
     }
   };
 
@@ -626,36 +690,87 @@ export default function ContentPlannerPage() {
                       {selectedArticle.content_type}
                     </span>
                   </div>
+                </div>
+              </div>
 
-                  {/* Difficulty */}
+              {/* SEO Metadata Card */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                    SEO Metadata
+                  </h3>
+                  {!isEditing && !isEditingMeta && (
+                    <button
+                      onClick={handleStartEditMeta}
+                      className="text-xs text-[#00AA45] hover:text-[#008936] font-medium"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {/* Slug */}
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Keyword Difficulty</p>
-                    <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-semibold ${getDifficultyColor(selectedArticle.keyword_difficulty)}`}>
-                      {selectedArticle.keyword_difficulty} / 100
-                    </span>
+                    <label className="text-xs text-gray-500 mb-1 block">Slug</label>
+                    {(isEditing || isEditingMeta) ? (
+                      <input
+                        type="text"
+                        value={editedSlug}
+                        onChange={(e) => setEditedSlug(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                        placeholder="article-slug"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {selectedArticle.slug || selectedArticle.target_keyword.toLowerCase().replace(/\s+/g, '-')}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Search Volume */}
+                  {/* Meta Description */}
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Search Volume</p>
-                    <span className="inline-block px-3 py-1.5 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg">
-                      {selectedArticle.search_volume >= 1000
-                        ? `${(selectedArticle.search_volume / 1000).toFixed(1)}K`
-                        : selectedArticle.search_volume} / month
-                    </span>
+                    <label className="text-xs text-gray-500 mb-1 block">
+                      Meta Description {(isEditing || isEditingMeta) && `(${editedMetaDescription.length}/155)`}
+                    </label>
+                    {(isEditing || isEditingMeta) ? (
+                      <textarea
+                        value={editedMetaDescription}
+                        onChange={(e) => setEditedMetaDescription(e.target.value.slice(0, 155))}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00AA45] focus:border-transparent resize-none"
+                        placeholder="Enter meta description (max 155 characters)"
+                        rows={3}
+                        maxLength={155}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-700 break-words">
+                        {selectedArticle.meta_description || <span className="italic text-gray-400">Not set</span>}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Scheduled Date */}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Scheduled Date</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {scheduledDate.toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </p>
-                  </div>
+                  {/* Edit Mode Actions */}
+                  {isEditingMeta && !isEditing && (
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelEditMeta}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleSaveMeta}
+                        loading={isSavingMeta}
+                        className="flex-1"
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

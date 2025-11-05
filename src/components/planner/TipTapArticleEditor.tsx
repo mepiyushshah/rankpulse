@@ -1,6 +1,6 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, useEditorState } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -88,6 +88,33 @@ export function TipTapArticleEditor({ title, content, onChange, onTitleChange }:
     immediatelyRender: false,
   });
 
+  // Use editorState to ensure re-renders when selection changes
+  const editorState = useEditorState({
+    editor,
+    selector: (ctx) => {
+      if (!ctx.editor) return null;
+      return {
+        isBold: ctx.editor.isActive('bold'),
+        isItalic: ctx.editor.isActive('italic'),
+        isUnderline: ctx.editor.isActive('underline'),
+        isH1: ctx.editor.isActive('heading', { level: 1 }),
+        isH2: ctx.editor.isActive('heading', { level: 2 }),
+        isH3: ctx.editor.isActive('heading', { level: 3 }),
+        isBulletList: ctx.editor.isActive('bulletList'),
+        isOrderedList: ctx.editor.isActive('orderedList'),
+        isLink: ctx.editor.isActive('link'),
+        isBlockquote: ctx.editor.isActive('blockquote'),
+        isCodeBlock: ctx.editor.isActive('codeBlock'),
+        isAlignLeft: ctx.editor.isActive({ textAlign: 'left' }),
+        isAlignCenter: ctx.editor.isActive({ textAlign: 'center' }),
+        isAlignRight: ctx.editor.isActive({ textAlign: 'right' }),
+        isAlignJustify: ctx.editor.isActive({ textAlign: 'justify' }),
+        canUndo: ctx.editor.can().undo(),
+        canRedo: ctx.editor.can().redo(),
+      };
+    },
+  });
+
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content);
@@ -118,97 +145,97 @@ export function TipTapArticleEditor({ title, content, onChange, onTitleChange }:
       label: 'Undo',
       action: () => editor.chain().focus().undo().run(),
       isActive: false,
-      isDisabled: !editor.can().undo(),
+      isDisabled: !editorState?.canUndo,
     },
     {
       icon: Redo,
       label: 'Redo',
       action: () => editor.chain().focus().redo().run(),
       isActive: false,
-      isDisabled: !editor.can().redo(),
+      isDisabled: !editorState?.canRedo,
     },
     { divider: true },
     {
       icon: Bold,
       label: 'Bold',
       action: () => editor.chain().focus().toggleBold().run(),
-      isActive: editor.isActive('bold'),
+      isActive: editorState?.isBold || false,
     },
     {
       icon: Italic,
       label: 'Italic',
       action: () => editor.chain().focus().toggleItalic().run(),
-      isActive: editor.isActive('italic'),
+      isActive: editorState?.isItalic || false,
     },
     {
       icon: UnderlineIcon,
       label: 'Underline',
       action: () => editor.chain().focus().toggleUnderline().run(),
-      isActive: editor.isActive('underline'),
+      isActive: editorState?.isUnderline || false,
     },
     { divider: true },
     {
       icon: Heading1,
       label: 'H1',
       action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-      isActive: editor.isActive('heading', { level: 1 }),
+      isActive: editorState?.isH1 || false,
     },
     {
       icon: Heading2,
       label: 'H2',
       action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-      isActive: editor.isActive('heading', { level: 2 }),
+      isActive: editorState?.isH2 || false,
     },
     {
       icon: Heading3,
       label: 'H3',
       action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-      isActive: editor.isActive('heading', { level: 3 }),
+      isActive: editorState?.isH3 || false,
     },
     { divider: true },
     {
       icon: AlignLeft,
       label: 'Align Left',
       action: () => editor.chain().focus().setTextAlign('left').run(),
-      isActive: editor.isActive({ textAlign: 'left' }),
+      isActive: editorState?.isAlignLeft || false,
     },
     {
       icon: AlignCenter,
       label: 'Align Center',
       action: () => editor.chain().focus().setTextAlign('center').run(),
-      isActive: editor.isActive({ textAlign: 'center' }),
+      isActive: editorState?.isAlignCenter || false,
     },
     {
       icon: AlignRight,
       label: 'Align Right',
       action: () => editor.chain().focus().setTextAlign('right').run(),
-      isActive: editor.isActive({ textAlign: 'right' }),
+      isActive: editorState?.isAlignRight || false,
     },
     {
       icon: AlignJustify,
       label: 'Justify',
       action: () => editor.chain().focus().setTextAlign('justify').run(),
-      isActive: editor.isActive({ textAlign: 'justify' }),
+      isActive: editorState?.isAlignJustify || false,
     },
     { divider: true },
     {
       icon: List,
       label: 'Bullet List',
       action: () => editor.chain().focus().toggleBulletList().run(),
-      isActive: editor.isActive('bulletList'),
+      isActive: editorState?.isBulletList || false,
     },
     {
       icon: ListOrdered,
       label: 'Numbered List',
       action: () => editor.chain().focus().toggleOrderedList().run(),
-      isActive: editor.isActive('orderedList'),
+      isActive: editorState?.isOrderedList || false,
     },
     { divider: true },
     {
       icon: LinkIcon,
       label: 'Insert Link',
       action: setLink,
-      isActive: editor.isActive('link'),
+      isActive: editorState?.isLink || false,
     },
     {
       icon: ImageIcon,
@@ -220,20 +247,33 @@ export function TipTapArticleEditor({ title, content, onChange, onTitleChange }:
       icon: Quote,
       label: 'Blockquote',
       action: () => editor.chain().focus().toggleBlockquote().run(),
-      isActive: editor.isActive('blockquote'),
+      isActive: editorState?.isBlockquote || false,
     },
     {
       icon: Code,
       label: 'Code Block',
       action: () => editor.chain().focus().toggleCodeBlock().run(),
-      isActive: editor.isActive('codeBlock'),
+      isActive: editorState?.isCodeBlock || false,
     },
   ];
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-      {/* Toolbar */}
-      <div className="border-b border-gray-200 p-3 flex flex-wrap items-center gap-2 bg-gray-50">
+    <>
+      {/* Article Title - Above Toolbar */}
+      {onTitleChange && (
+        <div className="bg-white border border-gray-200 rounded-t-xl px-8 pt-8 pb-4">
+          <input
+            type="text"
+            value={title || ''}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="Article Title"
+            className="article-title w-full focus:outline-none focus:ring-2 focus:ring-[#00AA45] focus:ring-offset-2 rounded-lg px-4 py-2 border-2 border-transparent hover:border-gray-200 transition-colors"
+          />
+        </div>
+      )}
+
+      {/* Toolbar - Fixed Sticky */}
+      <div className="sticky top-0 z-50 border-x border-b border-gray-200 p-3 flex flex-wrap items-center gap-2 bg-gray-50 shadow-md backdrop-blur-sm bg-opacity-95">
         {toolbarButtons.map((button, index) => {
           if ('divider' in button) {
             return (
@@ -264,21 +304,9 @@ export function TipTapArticleEditor({ title, content, onChange, onTitleChange }:
         })}
       </div>
 
-      {/* Article Content - Editable */}
-      <div className="bg-white">
+      {/* Article Content - Editable - Scrollable */}
+      <div className="bg-white border-x border-b border-gray-200 rounded-b-xl shadow-sm">
         <article className="px-8 py-10 md:px-12 md:py-12">
-          {/* Editable Title */}
-          {onTitleChange ? (
-            <input
-              type="text"
-              value={title || ''}
-              onChange={(e) => onTitleChange(e.target.value)}
-              placeholder="Article Title"
-              className="article-title w-full focus:outline-none focus:ring-2 focus:ring-[#00AA45] focus:ring-offset-2 rounded-lg px-4 py-2 border-2 border-transparent hover:border-gray-200 transition-colors mb-6"
-            />
-          ) : (
-            title && <h1 className="article-title mb-6">{title}</h1>
-          )}
           <EditorContent editor={editor} />
         </article>
       </div>
@@ -457,43 +485,29 @@ export function TipTapArticleEditor({ title, content, onChange, onTitleChange }:
           margin: 3rem 0;
         }
 
-        /* Tables */
+        /* Tables - Simple and Clean */
         .article-content table {
           width: 100%;
           border-collapse: collapse;
           margin: 2rem 0;
-          border-radius: 0.5rem;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .article-content thead {
-          background: linear-gradient(to right, #E6F7EE, #D4F1E3);
+          border: 1px solid #e5e7eb;
         }
 
         .article-content th {
-          padding: 1rem 1.25rem;
+          padding: 0.75rem 1rem;
           text-align: left;
           font-weight: 600;
           font-size: 0.9375rem;
           color: #111827;
-          border-bottom: 2px solid #00AA45;
+          background-color: #f9fafb;
+          border: 1px solid #e5e7eb;
         }
 
         .article-content td {
-          padding: 1rem 1.25rem;
+          padding: 0.75rem 1rem;
           font-size: 0.9375rem;
           color: #374151;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .article-content tbody tr:hover {
-          background-color: #f9fafb;
-          transition: background-color 0.2s;
-        }
-
-        .article-content tbody tr:last-child td {
-          border-bottom: none;
+          border: 1px solid #e5e7eb;
         }
 
         /* Focus state */
@@ -506,6 +520,6 @@ export function TipTapArticleEditor({ title, content, onChange, onTitleChange }:
           background-color: #B8E6CE;
         }
       `}} />
-    </div>
+    </>
   );
 }

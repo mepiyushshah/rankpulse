@@ -28,9 +28,44 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
+interface ButtonStates {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  h1: boolean;
+  h2: boolean;
+  h3: boolean;
+  bulletList: boolean;
+  orderedList: boolean;
+  justifyLeft: boolean;
+  justifyCenter: boolean;
+  justifyRight: boolean;
+  justifyFull: boolean;
+  link: boolean;
+  blockquote: boolean;
+  pre: boolean;
+}
+
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [buttonStates, setButtonStates] = useState<ButtonStates>({
+    bold: false,
+    italic: false,
+    underline: false,
+    h1: false,
+    h2: false,
+    h3: false,
+    bulletList: false,
+    orderedList: false,
+    justifyLeft: false,
+    justifyCenter: false,
+    justifyRight: false,
+    justifyFull: false,
+    link: false,
+    blockquote: false,
+    pre: false,
+  });
 
   useEffect(() => {
     if (editorRef.current && value) {
@@ -44,16 +79,73 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
     }
   }, [value, isInitialized]);
 
+  const updateButtonStates = () => {
+    if (!editorRef.current) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const newStates: ButtonStates = {
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
+      h1: false,
+      h2: false,
+      h3: false,
+      bulletList: document.queryCommandState('insertUnorderedList'),
+      orderedList: document.queryCommandState('insertOrderedList'),
+      justifyLeft: document.queryCommandState('justifyLeft'),
+      justifyCenter: document.queryCommandState('justifyCenter'),
+      justifyRight: document.queryCommandState('justifyRight'),
+      justifyFull: document.queryCommandState('justifyFull'),
+      link: document.queryCommandState('createLink'),
+      blockquote: false,
+      pre: false,
+    };
+
+    // Check for headings and block-level elements
+    let node = selection.anchorNode;
+    while (node && node !== editorRef.current) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        const tagName = element.tagName?.toLowerCase();
+
+        if (tagName === 'h1') newStates.h1 = true;
+        if (tagName === 'h2') newStates.h2 = true;
+        if (tagName === 'h3') newStates.h3 = true;
+        if (tagName === 'blockquote') newStates.blockquote = true;
+        if (tagName === 'pre') newStates.pre = true;
+      }
+      node = node.parentNode;
+    }
+
+    setButtonStates(newStates);
+  };
+
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     editorRef.current?.focus();
     handleContentChange();
+    // Update button states after command execution
+    setTimeout(updateButtonStates, 10);
   };
 
   const handleContentChange = () => {
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
     }
+  };
+
+  const handleSelectionChange = () => {
+    updateButtonStates();
+  };
+
+  const handleKeyUp = () => {
+    updateButtonStates();
+  };
+
+  const handleMouseUp = () => {
+    updateButtonStates();
   };
 
   const insertHeading = (level: number) => {
@@ -79,96 +171,114 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       icon: Undo,
       label: 'Undo',
       action: () => execCommand('undo'),
+      isActive: false,
     },
     {
       icon: Redo,
       label: 'Redo',
       action: () => execCommand('redo'),
+      isActive: false,
     },
     { divider: true },
     {
       icon: Heading1,
       label: 'Heading 1',
       action: () => insertHeading(1),
+      isActive: buttonStates.h1,
     },
     {
       icon: Heading2,
       label: 'Heading 2',
       action: () => insertHeading(2),
+      isActive: buttonStates.h2,
     },
     {
       icon: Heading3,
       label: 'Heading 3',
       action: () => insertHeading(3),
+      isActive: buttonStates.h3,
     },
     { divider: true },
     {
       icon: Bold,
       label: 'Bold',
       action: () => execCommand('bold'),
+      isActive: buttonStates.bold,
     },
     {
       icon: Italic,
       label: 'Italic',
       action: () => execCommand('italic'),
+      isActive: buttonStates.italic,
     },
     {
       icon: Underline,
       label: 'Underline',
       action: () => execCommand('underline'),
+      isActive: buttonStates.underline,
     },
     { divider: true },
     {
       icon: AlignLeft,
       label: 'Align Left',
       action: () => execCommand('justifyLeft'),
+      isActive: buttonStates.justifyLeft,
     },
     {
       icon: AlignCenter,
       label: 'Align Center',
       action: () => execCommand('justifyCenter'),
+      isActive: buttonStates.justifyCenter,
     },
     {
       icon: AlignRight,
       label: 'Align Right',
       action: () => execCommand('justifyRight'),
+      isActive: buttonStates.justifyRight,
     },
     {
       icon: AlignJustify,
       label: 'Justify',
       action: () => execCommand('justifyFull'),
+      isActive: buttonStates.justifyFull,
     },
     { divider: true },
     {
       icon: List,
       label: 'Bullet List',
       action: () => execCommand('insertUnorderedList'),
+      isActive: buttonStates.bulletList,
     },
     {
       icon: ListOrdered,
       label: 'Numbered List',
       action: () => execCommand('insertOrderedList'),
+      isActive: buttonStates.orderedList,
     },
     { divider: true },
     {
       icon: Link,
       label: 'Insert Link',
       action: createLink,
+      isActive: buttonStates.link,
     },
     {
       icon: Image,
       label: 'Insert Image',
       action: insertImage,
+      isActive: false,
     },
     {
       icon: Quote,
       label: 'Blockquote',
       action: () => execCommand('formatBlock', 'blockquote'),
+      isActive: buttonStates.blockquote,
     },
     {
       icon: Code,
       label: 'Code Block',
       action: () => execCommand('formatBlock', 'pre'),
+      isActive: buttonStates.pre,
     },
   ];
 
@@ -192,7 +302,11 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
               key={index}
               type="button"
               onClick={button.action}
-              className="p-2 rounded-lg transition-all text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+              className={`p-2 rounded-lg transition-all ${
+                button.isActive
+                  ? 'bg-[#00AA45] text-white'
+                  : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+              }`}
               title={button.label}
             >
               <Icon className="h-4 w-4" />
@@ -209,6 +323,9 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
             contentEditable
             onInput={handleContentChange}
             onBlur={handleContentChange}
+            onKeyUp={handleKeyUp}
+            onMouseUp={handleMouseUp}
+            onClick={handleMouseUp}
             className="min-h-[600px] focus:outline-none
               prose prose-xl prose-slate max-w-none
               prose-headings:font-bold prose-headings:text-gray-900
