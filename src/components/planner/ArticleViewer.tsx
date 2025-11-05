@@ -24,15 +24,13 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
   }, [content]);
 
   return (
-    <div className="bg-gray-50">
-      <div className="max-w-5xl mx-auto">
-        {/* Article Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <article className="article-content px-8 py-10 md:px-12 md:py-12">
-            {title && <h1 className="article-title">{title}</h1>}
-            <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
-          </article>
-        </div>
+    <div>
+      {/* Article Content */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <article className="article-content px-8 py-10 md:px-12 md:py-12">
+          {title && <h1 className="article-title">{title}</h1>}
+          <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
+        </article>
       </div>
 
       <style jsx global>{`
@@ -92,14 +90,14 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
 
         /* Links */
         .article-content a {
-          color: #4f46e5;
+          color: #00AA45;
           text-decoration: none;
           font-weight: 500;
           transition: color 0.2s;
         }
 
         .article-content a:hover {
-          color: #3730a3;
+          color: #008837;
           text-decoration: underline;
         }
 
@@ -122,13 +120,13 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
         }
 
         .article-content ul li::marker {
-          color: #374151;
+          color: #00AA45;
         }
 
         /* Blockquotes */
         .article-content blockquote {
-          border-left: 4px solid #818cf8;
-          background: linear-gradient(to right, #eef2ff, #ffffff);
+          border-left: 4px solid #00AA45;
+          background: linear-gradient(to right, #E6F7EE, #ffffff);
           padding: 1.25rem 1.5rem;
           margin: 2rem 0;
           border-radius: 0 0.5rem 0.5rem 0;
@@ -146,7 +144,7 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
           padding: 0.25rem 0.5rem;
           border-radius: 0.25rem;
           font-size: 0.9375rem;
-          color: #4f46e5;
+          color: #00AA45;
           font-family: 'Courier New', Courier, monospace;
         }
 
@@ -171,26 +169,38 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
           width: 100%;
           border-collapse: collapse;
           margin: 2rem 0;
-          font-size: 1rem;
+          border-radius: 0.5rem;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .article-content thead {
+          background: linear-gradient(to right, #E6F7EE, #D4F1E3);
         }
 
         .article-content th {
-          background-color: #eef2ff;
-          color: #3730a3;
-          font-weight: 600;
-          padding: 0.75rem 1rem;
+          padding: 1rem 1.25rem;
           text-align: left;
-          border-bottom: 2px solid #c7d2fe;
+          font-weight: 600;
+          font-size: 0.9375rem;
+          color: #111827;
+          border-bottom: 2px solid #00AA45;
         }
 
         .article-content td {
-          padding: 0.75rem 1rem;
-          border-bottom: 1px solid #e5e7eb;
+          padding: 1rem 1.25rem;
+          font-size: 0.9375rem;
           color: #374151;
+          border-bottom: 1px solid #e5e7eb;
         }
 
-        .article-content tr:hover {
+        .article-content tbody tr:hover {
           background-color: #f9fafb;
+          transition: background-color 0.2s;
+        }
+
+        .article-content tbody tr:last-child td {
+          border-bottom: none;
         }
 
         /* Strong/Bold */

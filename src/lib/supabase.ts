@@ -36,7 +36,7 @@ export type Project = {
 export type CMSConnection = {
   id: string;
   project_id: string;
-  platform: 'wordpress' | 'webflow' | 'shopify';
+  platform: 'wordpress';
   api_url: string;
   api_key: string;
   status: string;

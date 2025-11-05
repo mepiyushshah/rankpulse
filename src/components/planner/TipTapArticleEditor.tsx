@@ -7,6 +7,10 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableCell } from '@tiptap/extension-table-cell';
 import {
   Bold,
   Italic,
@@ -33,9 +37,10 @@ interface TipTapArticleEditorProps {
   title?: string;
   content: string;
   onChange: (content: string) => void;
+  onTitleChange?: (title: string) => void;
 }
 
-export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleEditorProps) {
+export function TipTapArticleEditor({ title, content, onChange, onTitleChange }: TipTapArticleEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -55,6 +60,15 @@ export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleE
           class: 'max-w-full h-auto rounded-lg my-4',
         },
       }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'article-table',
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -217,50 +231,59 @@ export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleE
   ];
 
   return (
-    <div className="bg-gray-50">
-      <div className="max-w-5xl mx-auto">
-        {/* Toolbar */}
-        <div className="bg-white border border-gray-200 rounded-t-xl p-3 flex flex-wrap items-center gap-2 sticky top-0 z-10 shadow-sm">
-          {toolbarButtons.map((button, index) => {
-            if ('divider' in button) {
-              return (
-                <div
-                  key={`divider-${index}`}
-                  className="w-px h-6 bg-gray-300"
-                />
-              );
-            }
-
-            const Icon = button.icon;
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      {/* Toolbar */}
+      <div className="border-b border-gray-200 p-3 flex flex-wrap items-center gap-2 bg-gray-50">
+        {toolbarButtons.map((button, index) => {
+          if ('divider' in button) {
             return (
-              <button
-                key={index}
-                type="button"
-                onClick={button.action}
-                disabled={button.isDisabled}
-                className={`p-2 rounded transition-all ${
-                  button.isActive
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                } ${button.isDisabled ? 'opacity-30 cursor-not-allowed' : ''}`}
-                title={button.label}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
+              <div
+                key={`divider-${index}`}
+                className="w-px h-6 bg-gray-300"
+              />
             );
-          })}
-        </div>
+          }
 
-        {/* Article Content - Editable */}
-        <div className="bg-white border-x border-b border-gray-200 rounded-b-xl shadow-sm overflow-hidden">
-          <article className="px-8 py-10 md:px-12 md:py-12">
-            {title && <h1 className="article-title">{title}</h1>}
-            <EditorContent editor={editor} />
-          </article>
-        </div>
+          const Icon = button.icon;
+          return (
+            <button
+              key={index}
+              type="button"
+              onClick={button.action}
+              disabled={button.isDisabled}
+              className={`p-2 rounded-lg transition-all ${
+                button.isActive
+                  ? 'bg-[#00AA45] text-white'
+                  : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+              } ${button.isDisabled ? 'opacity-30 cursor-not-allowed' : ''}`}
+              title={button.label}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          );
+        })}
       </div>
 
-      <style jsx global>{`
+      {/* Article Content - Editable */}
+      <div className="bg-white">
+        <article className="px-8 py-10 md:px-12 md:py-12">
+          {/* Editable Title */}
+          {onTitleChange ? (
+            <input
+              type="text"
+              value={title || ''}
+              onChange={(e) => onTitleChange(e.target.value)}
+              placeholder="Article Title"
+              className="article-title w-full focus:outline-none focus:ring-2 focus:ring-[#00AA45] focus:ring-offset-2 rounded-lg px-4 py-2 border-2 border-transparent hover:border-gray-200 transition-colors mb-6"
+            />
+          ) : (
+            title && <h1 className="article-title mb-6">{title}</h1>
+          )}
+          <EditorContent editor={editor} />
+        </article>
+      </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
         .article-content {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
           color: #1f2937;
@@ -303,7 +326,7 @@ export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleE
           margin-top: 3rem;
           margin-bottom: 1.25rem;
           padding-bottom: 0.75rem;
-          border-bottom: 3px solid #e0e7ff;
+          border-bottom: 3px solid #E6F7EE;
           scroll-margin-top: 2rem;
         }
 
@@ -337,14 +360,14 @@ export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleE
 
         /* Links */
         .article-content a {
-          color: #4f46e5;
+          color: #00AA45;
           text-decoration: none;
           font-weight: 500;
           transition: color 0.2s;
         }
 
         .article-content a:hover {
-          color: #3730a3;
+          color: #008837;
           text-decoration: underline;
         }
 
@@ -367,13 +390,13 @@ export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleE
         }
 
         .article-content ul li::marker {
-          color: #6366f1;
+          color: #00AA45;
         }
 
         /* Blockquotes */
         .article-content blockquote {
-          border-left: 4px solid #818cf8;
-          background: linear-gradient(to right, #eef2ff, #ffffff);
+          border-left: 4px solid #00AA45;
+          background: linear-gradient(to right, #E6F7EE, #ffffff);
           padding: 1.25rem 1.5rem;
           margin: 2rem 0;
           border-radius: 0 0.5rem 0.5rem 0;
@@ -391,7 +414,7 @@ export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleE
           padding: 0.25rem 0.5rem;
           border-radius: 0.25rem;
           font-size: 0.9375rem;
-          color: #4f46e5;
+          color: #00AA45;
           font-family: 'Courier New', Courier, monospace;
         }
 
@@ -434,6 +457,45 @@ export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleE
           margin: 3rem 0;
         }
 
+        /* Tables */
+        .article-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 2rem 0;
+          border-radius: 0.5rem;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .article-content thead {
+          background: linear-gradient(to right, #E6F7EE, #D4F1E3);
+        }
+
+        .article-content th {
+          padding: 1rem 1.25rem;
+          text-align: left;
+          font-weight: 600;
+          font-size: 0.9375rem;
+          color: #111827;
+          border-bottom: 2px solid #00AA45;
+        }
+
+        .article-content td {
+          padding: 1rem 1.25rem;
+          font-size: 0.9375rem;
+          color: #374151;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .article-content tbody tr:hover {
+          background-color: #f9fafb;
+          transition: background-color 0.2s;
+        }
+
+        .article-content tbody tr:last-child td {
+          border-bottom: none;
+        }
+
         /* Focus state */
         .ProseMirror:focus {
           outline: none;
@@ -441,9 +503,9 @@ export function TipTapArticleEditor({ title, content, onChange }: TipTapArticleE
 
         /* Selection */
         .ProseMirror ::selection {
-          background-color: #c7d2fe;
+          background-color: #B8E6CE;
         }
-      `}</style>
+      `}} />
     </div>
   );
 }

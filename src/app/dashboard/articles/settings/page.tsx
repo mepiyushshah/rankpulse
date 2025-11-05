@@ -697,7 +697,7 @@ export default function ArticlesSettingsPage() {
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                       <div>
                         <div className="text-sm font-medium text-gray-900">Auto-Publish to CMS</div>
-                        <div className="text-xs text-gray-600 mt-0.5">Automatically publish to WordPress/Webflow</div>
+                        <div className="text-xs text-gray-600 mt-0.5">Automatically publish to WordPress</div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input

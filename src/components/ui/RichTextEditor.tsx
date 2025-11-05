@@ -33,9 +33,14 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (editorRef.current && !isInitialized && value) {
-      editorRef.current.innerHTML = value;
-      setIsInitialized(true);
+    if (editorRef.current && value) {
+      // Only update if content is different to avoid cursor issues
+      if (editorRef.current.innerHTML !== value) {
+        editorRef.current.innerHTML = value;
+      }
+      if (!isInitialized) {
+        setIsInitialized(true);
+      }
     }
   }, [value, isInitialized]);
 
@@ -169,14 +174,14 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
   return (
     <div className="bg-white overflow-hidden">
-      {/* Toolbar - WordPress Style */}
-      <div className="bg-white border-b border-gray-200 p-3 flex flex-wrap items-center gap-2 sticky top-0 z-10 shadow-sm">
+      {/* Toolbar */}
+      <div className="border-b border-gray-200 p-3 flex flex-wrap items-center gap-2 bg-gray-50">
         {toolbarButtons.map((button, index) => {
           if ('divider' in button) {
             return (
               <div
                 key={`divider-${index}`}
-                className="w-px h-7 bg-gray-300 mx-1"
+                className="w-px h-6 bg-gray-300"
               />
             );
           }
@@ -187,10 +192,10 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
               key={index}
               type="button"
               onClick={button.action}
-              className="p-2.5 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-all text-gray-600 hover:shadow-sm active:scale-95"
+              className="p-2 rounded-lg transition-all text-gray-600 hover:bg-gray-200 hover:text-gray-900"
               title={button.label}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-4 w-4" />
             </button>
           );
         })}

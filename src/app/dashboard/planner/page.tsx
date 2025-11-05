@@ -53,6 +53,7 @@ export default function ContentPlannerPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [editedTitle, setEditedTitle] = useState('');
 
   // Load project and articles on mount and when month changes
   useEffect(() => {
@@ -406,17 +407,31 @@ export default function ContentPlannerPage() {
   // Handle start edit
   const handleStartEdit = () => {
     if (!selectedArticle?.content) return;
-    try {
-      const html = marked(selectedArticle.content, {
-        breaks: true,
-        gfm: true
-      }) as string;
-      setEditedContent(html);
-      setIsEditing(true);
-    } catch (error) {
-      console.error('Error converting markdown:', error);
+
+    // Set the title for editing
+    setEditedTitle(selectedArticle.title || selectedArticle.target_keyword);
+
+    // Check if content is already HTML (contains HTML tags)
+    const isHTML = /<[a-z][\s\S]*>/i.test(selectedArticle.content);
+
+    if (isHTML) {
+      // Content is already HTML, use it directly
       setEditedContent(selectedArticle.content);
       setIsEditing(true);
+    } else {
+      // Content is markdown, convert to HTML
+      try {
+        const html = marked(selectedArticle.content, {
+          breaks: true,
+          gfm: true
+        }) as string;
+        setEditedContent(html);
+        setIsEditing(true);
+      } catch (error) {
+        console.error('Error converting markdown:', error);
+        setEditedContent(selectedArticle.content);
+        setIsEditing(true);
+      }
     }
   };
 
@@ -424,6 +439,7 @@ export default function ContentPlannerPage() {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedContent('');
+    setEditedTitle('');
   };
 
   // Handle save edit
@@ -436,6 +452,7 @@ export default function ContentPlannerPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          title: editedTitle,
           content: editedContent,
         }),
       });
@@ -557,9 +574,10 @@ export default function ContentPlannerPage() {
               </div>
             ) : isEditing ? (
               <TipTapArticleEditor
-                title={selectedArticle.title}
+                title={editedTitle}
                 content={editedContent}
                 onChange={setEditedContent}
+                onTitleChange={setEditedTitle}
               />
             ) : (
               <ArticleViewer title={selectedArticle.title} content={selectedArticle.content} />

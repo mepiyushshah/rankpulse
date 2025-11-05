@@ -39,6 +39,7 @@ export function ArticleDetailModal({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [editedTitle, setEditedTitle] = useState('');
 
   if (!article) return null;
 
@@ -77,25 +78,40 @@ export function ArticleDetailModal({
   };
 
   const handleStartEdit = () => {
-    // Convert markdown to HTML for editing
+    // Check if content is already HTML or markdown
     if (!article?.content) return;
-    try {
-      const html = marked(article.content, {
-        breaks: true,
-        gfm: true
-      }) as string;
-      setEditedContent(html);
-      setIsEditing(true);
-    } catch (error) {
-      console.error('Error converting markdown:', error);
+
+    // Set the title for editing
+    setEditedTitle(article.title || article.target_keyword);
+
+    // Check if content is already HTML (contains HTML tags)
+    const isHTML = /<[a-z][\s\S]*>/i.test(article.content);
+
+    if (isHTML) {
+      // Content is already HTML, use it directly
       setEditedContent(article.content);
       setIsEditing(true);
+    } else {
+      // Content is markdown, convert to HTML
+      try {
+        const html = marked(article.content, {
+          breaks: true,
+          gfm: true
+        }) as string;
+        setEditedContent(html);
+        setIsEditing(true);
+      } catch (error) {
+        console.error('Error converting markdown:', error);
+        setEditedContent(article.content);
+        setIsEditing(true);
+      }
     }
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedContent('');
+    setEditedTitle('');
   };
 
   const handleSaveEdit = async () => {
@@ -107,6 +123,7 @@ export function ArticleDetailModal({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          title: editedTitle,
           content: editedContent,
         }),
       });
@@ -117,6 +134,8 @@ export function ArticleDetailModal({
 
       alert('Changes saved successfully!');
       setIsEditing(false);
+      setEditedTitle('');
+      setEditedContent('');
       onUpdate(); // Reload the article data
     } catch (error: any) {
       alert(error.message || 'Failed to save changes');
@@ -237,6 +256,17 @@ export function ArticleDetailModal({
             </div>
           ) : isEditing ? (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              {/* Editable Title */}
+              <div className="px-16 pt-10 pb-4 border-b border-gray-200">
+                <input
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  placeholder="Article Title"
+                  className="w-full text-4xl font-bold text-gray-900 leading-tight focus:outline-none focus:ring-2 focus:ring-[#00AA45] focus:ring-offset-2 rounded-lg px-4 py-2 border-2 border-transparent hover:border-gray-200 transition-colors"
+                />
+              </div>
+              {/* Rich Text Editor for Content */}
               <RichTextEditor
                 value={editedContent}
                 onChange={setEditedContent}

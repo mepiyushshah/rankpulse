@@ -13,7 +13,7 @@ export default function Home() {
             </p>
             <p className="text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
               AI-powered SEO content automation platform. Generate, optimize, and publish
-              long-form articles directly to WordPress, Webflow, and Shopify.
+              long-form articles directly to WordPress.
             </p>
             <div className="flex gap-4 justify-center">
               <a
@@ -99,10 +99,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Multi-Platform Publishing
+                WordPress Publishing
               </h3>
               <p className="text-gray-600">
-                Publish directly to WordPress, Webflow, and Shopify with one click
+                Publish directly to your WordPress site with one click
               </p>
             </div>
 

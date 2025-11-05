@@ -12,114 +12,16 @@ const WordPressIcon = () => (
   </svg>
 );
 
-const NotionIcon = () => (
-  <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
-    <rect width="24" height="24" rx="3" fill="black"/>
-    <path d="M6 6h12v12H6z" fill="white"/>
-    <path d="M8 8h8v1.5H8V8zm0 3h8v1.5H8V11zm0 3h5v1.5H8V14z" fill="black"/>
-  </svg>
-);
-
-const WebflowIcon = () => (
-  <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" fill="#4353FF"/>
-    <path d="M7 9l3 6 3-4 3 6V9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const ShopifyIcon = () => (
-  <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
-    <rect width="24" height="24" rx="3" fill="#95BF47"/>
-    <path d="M14.5 7.5c-.3-.1-.7-.1-1-.1-1.4 0-2.6.5-3.5 1.4-.7.7-1.2 1.6-1.4 2.7-.1.5-.1 1-.1 1.5 0 .4 0 .8.1 1.2h7.8c.1-.4.1-.8.1-1.2 0-1.8-.6-3.3-1.6-4.4-.2-.3-.5-.6-.4-1.1z" fill="white"/>
-  </svg>
-);
-
-const WixIcon = () => (
-  <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
-    <rect width="24" height="24" rx="3" fill="black"/>
-    <text x="12" y="16" fontSize="14" fill="white" textAnchor="middle" fontWeight="bold">Wix</text>
-  </svg>
-);
-
-const WebhookIcon = () => (
-  <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2">
-    <circle cx="12" cy="12" r="10" fill="#F3E8FF"/>
-    <path d="M8 12h8M12 8v8" strokeLinecap="round"/>
-  </svg>
-);
-
-const FramerIcon = () => (
-  <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
-    <rect width="24" height="24" rx="3" fill="#0055FF"/>
-    <path d="M6 6h12v6H12v6l-6-6V6z" fill="white"/>
-  </svg>
-);
 
 // Platform configuration
 const PLATFORMS = [
   {
     id: 'wordpress',
-    name: 'WordPress',
+    name: 'WordPress.org',
     icon: WordPressIcon,
     description: 'Self-hosted WordPress sites',
     color: 'bg-blue-50 border-blue-200',
     fields: ['api_url', 'api_key']
-  },
-  {
-    id: 'notion',
-    name: 'Notion',
-    icon: NotionIcon,
-    description: 'Notion databases and pages',
-    color: 'bg-gray-50 border-gray-200',
-    fields: ['api_key', 'api_secret']
-  },
-  {
-    id: 'webflow',
-    name: 'Webflow',
-    icon: WebflowIcon,
-    description: 'Webflow CMS collections',
-    color: 'bg-indigo-50 border-indigo-200',
-    fields: ['api_key', 'site_id']
-  },
-  {
-    id: 'shopify',
-    name: 'Shopify',
-    icon: ShopifyIcon,
-    description: 'Shopify blog posts',
-    color: 'bg-green-50 border-green-200',
-    fields: ['api_url', 'api_key']
-  },
-  {
-    id: 'wix',
-    name: 'Wix',
-    icon: WixIcon,
-    description: 'Wix blog and pages',
-    color: 'bg-slate-50 border-slate-200',
-    fields: ['api_key', 'site_id']
-  },
-  {
-    id: 'wordpress_com',
-    name: 'WordPress.com',
-    icon: WordPressIcon,
-    description: 'WordPress.com hosted blogs',
-    color: 'bg-blue-50 border-blue-200',
-    fields: ['api_key', 'site_id']
-  },
-  {
-    id: 'webhook',
-    name: 'API Webhook',
-    icon: WebhookIcon,
-    description: 'Custom webhook integration',
-    color: 'bg-purple-50 border-purple-200',
-    fields: ['webhook_url', 'api_key']
-  },
-  {
-    id: 'framer',
-    name: 'Framer',
-    icon: FramerIcon,
-    description: 'Framer CMS collections',
-    color: 'bg-orange-50 border-orange-200',
-    fields: ['api_key', 'site_id']
   }
 ];
 
@@ -350,7 +252,7 @@ export default function IntegrationsPage() {
       {/* Available Platforms */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Available Platforms</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {PLATFORMS.map((platform) => {
             const isConnected = getConnectedPlatforms().includes(platform.id);
             return (
