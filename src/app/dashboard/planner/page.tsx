@@ -42,6 +42,7 @@ interface Article {
   status: string;
   slug?: string;
   meta_description?: string;
+  published_url?: string;
 }
 
 export default function ContentPlannerPage() {
