@@ -5,7 +5,8 @@ import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { ArticleViewer } from './ArticleViewer';
-import { Loader2, Sparkles, Edit2, Save, X } from 'lucide-react';
+import PublishArticleDialog from './PublishArticleDialog';
+import { Loader2, Sparkles, Edit2, Save, X, Send, ExternalLink } from 'lucide-react';
 import { marked } from 'marked';
 
 interface Article {
@@ -18,6 +19,8 @@ interface Article {
   keyword_difficulty: number;
   scheduled_at: string;
   status: string;
+  published_url?: string;
+  cms_post_id?: string;
 }
 
 interface ArticleDetailModalProps {
@@ -40,6 +43,8 @@ export function ArticleDetailModal({
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState('');
   const [editedTitle, setEditedTitle] = useState('');
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(article?.published_url || null);
 
   if (!article) return null;
 
@@ -185,17 +190,39 @@ export function ArticleDetailModal({
                   year: 'numeric'
                 })}
               </p>
+              {(publishedUrl || article.published_url) && (
+                <a
+                  href={publishedUrl || article.published_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 mt-2 text-green-600 hover:text-green-700 font-medium"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View on WordPress
+                </a>
+              )}
             </div>
             <div className="flex gap-2">
               {hasContent && !isEditing && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleStartEdit}
-                >
-                  <Edit2 className="mr-1.5 h-4 w-4" />
-                  Edit Article
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartEdit}
+                  >
+                    <Edit2 className="mr-1.5 h-4 w-4" />
+                    Edit Article
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setShowPublishDialog(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Send className="mr-1.5 h-4 w-4" />
+                    {article.cms_post_id ? 'Update on WordPress' : 'Publish to WordPress'}
+                  </Button>
+                </>
               )}
               {isEditing && (
                 <>
@@ -298,6 +325,20 @@ export function ArticleDetailModal({
           </Button>
         </div>
       </div>
+
+      {/* Publish Dialog */}
+      {showPublishDialog && projectId && (
+        <PublishArticleDialog
+          articleId={article.id}
+          articleTitle={article.title || article.target_keyword}
+          projectId={projectId}
+          onClose={() => setShowPublishDialog(false)}
+          onSuccess={(url) => {
+            setPublishedUrl(url);
+            onUpdate();
+          }}
+        />
+      )}
     </Dialog>
   );
 }
