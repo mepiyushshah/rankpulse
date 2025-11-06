@@ -83,23 +83,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
+    // Prepare the insert data, only including fields that exist in the table
+    const insertData: any = {
+      project_id,
+      platform,
+      status: 'active'
+    };
+
+    // Add optional fields only if they're provided
+    if (api_url) insertData.api_url = api_url;
+    if (api_key) insertData.api_key = api_key;
+    if (api_secret) insertData.api_secret = api_secret;
+    if (site_id) insertData.site_id = site_id;
+    if (webhook_url) insertData.webhook_url = webhook_url;
+    if (config) insertData.config = config;
+
     // Create the integration
     const { data: integration, error } = await supabase
       .from('cms_connections')
-      .insert([
-        {
-          project_id,
-          platform,
-          name,
-          api_url,
-          api_key,
-          api_secret,
-          site_id,
-          webhook_url,
-          config,
-          status: 'active'
-        }
-      ])
+      .insert([insertData])
       .select()
       .single();
 

@@ -19,6 +19,7 @@ import {
   Save,
   X,
   Loader2,
+  Send,
 } from 'lucide-react';
 import { marked } from 'marked';
 
@@ -60,6 +61,7 @@ export default function ContentPlannerPage() {
   const [editedMetaDescription, setEditedMetaDescription] = useState('');
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [isSavingMeta, setIsSavingMeta] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Load project and articles on mount and when month changes
   useEffect(() => {
@@ -540,6 +542,69 @@ export default function ContentPlannerPage() {
     }
   };
 
+  const handlePublish = async () => {
+    if (!selectedArticle || !projectId) return;
+
+    // Check if article has content
+    if (!selectedArticle.content || selectedArticle.content.trim().length === 0) {
+      alert('Cannot publish an empty article. Please generate content first.');
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      // First, fetch the WordPress integration for this project
+      const integrationsResponse = await fetch(`/api/integrations?project_id=${projectId}`);
+      const integrationsData = await integrationsResponse.json();
+
+      if (!integrationsResponse.ok) {
+        throw new Error('Failed to fetch integrations');
+      }
+
+      // Find the WordPress integration
+      const wordpressIntegration = integrationsData.integrations?.find(
+        (int: any) => int.platform === 'wordpress'
+      );
+
+      if (!wordpressIntegration) {
+        alert('No WordPress integration found. Please connect WordPress first in the Integrations page.');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to publish "${selectedArticle.title}" to WordPress?`)) {
+        return;
+      }
+
+      // Publish the article
+      const response = await fetch(`/api/articles/${selectedArticle.id}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          integration_id: wordpressIntegration.id,
+          status: 'publish', // Publish immediately
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to publish article');
+      }
+
+      alert(`Article published successfully!\n\nPost ID: ${data.data.post_id}\nURL: ${data.data.url || 'N/A'}`);
+      await loadArticles();
+      const updatedArticle = articles.find(a => a.id === selectedArticle.id);
+      if (updatedArticle) {
+        setSelectedArticle(updatedArticle);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to publish article. Please check your WordPress connection.');
+      console.error('Publish error:', error);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const getDifficultyColor = (difficulty: number) => {
     if (difficulty < 30) return 'text-green-600 bg-green-50';
     if (difficulty < 60) return 'text-yellow-600 bg-yellow-50';
@@ -568,14 +633,28 @@ export default function ContentPlannerPage() {
           </Button>
           <div className="flex gap-2">
             {hasContent && !isEditing && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleStartEdit}
-              >
-                <Edit2 className="mr-1.5 h-4 w-4" />
-                Edit Article
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartEdit}
+                >
+                  <Edit2 className="mr-1.5 h-4 w-4" />
+                  Edit Article
+                </Button>
+                {selectedArticle.status !== 'published' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handlePublish}
+                    loading={isPublishing}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Send className="mr-1.5 h-4 w-4" />
+                    Publish to WordPress
+                  </Button>
+                )}
+              </>
             )}
             {isEditing && (
               <>
@@ -675,6 +754,37 @@ export default function ContentPlannerPage() {
                 </h3>
 
                 <div className="space-y-4">
+                  {/* Status */}
+                  {selectedArticle.status === 'published' && (
+                    <div className="pb-4 border-b border-gray-200">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm font-semibold text-green-800">Published</span>
+                          </div>
+                          {selectedArticle.published_url && (
+                            <a
+                              href={selectedArticle.published_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-green-700 hover:text-green-900 underline font-medium"
+                            >
+                              View Post →
+                            </a>
+                          )}
+                        </div>
+                        <button
+                          onClick={handlePublish}
+                          disabled={isPublishing}
+                          className="w-full px-3 py-1.5 text-xs font-medium text-green-700 bg-white border border-green-300 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
+                        >
+                          {isPublishing ? 'Updating...' : '🔄 Update on WordPress'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Target Keyword */}
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Target Keyword</p>
@@ -957,11 +1067,16 @@ function CalendarDayCell({
                 <span className="font-medium">Diff: {article.keyword_difficulty}</span>
               </div>
 
-              {/* Content Type */}
-              <div className="flex items-center gap-1 mt-1">
+              {/* Content Type and Status */}
+              <div className="flex items-center justify-between gap-1 mt-1">
                 <span className="text-[10px] text-gray-500">
                   {getContentTypeEmoji(article.content_type)} {article.content_type}
                 </span>
+                {article.status === 'published' && (
+                  <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                    ✓ Published
+                  </span>
+                )}
               </div>
             </div>
           ))
