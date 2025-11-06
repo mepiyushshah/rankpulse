@@ -70,7 +70,7 @@ export async function POST(
     }
 
     // Convert markdown content to HTML
-    let htmlContent = marked(article.content || '');
+    let htmlContent = await marked(article.content || '');
 
     // Create WordPress client
     const wpClient = createWordPressClient(integration);

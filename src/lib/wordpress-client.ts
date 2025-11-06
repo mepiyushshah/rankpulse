@@ -252,7 +252,7 @@ export class WordPressClient {
           'Content-Disposition': `attachment; filename="${filename}"`,
           'Content-Type': mimeType,
         },
-        body: file,
+        body: file as any,
       });
 
       const data = await response.json();
