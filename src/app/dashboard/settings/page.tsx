@@ -3,8 +3,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Input, Textarea, Select } from '@/components/ui/input';
 import { COUNTRIES, LANGUAGES } from '@/lib/constants';
+import {
+  Building2,
+  Users,
+  Globe,
+  Sparkles,
+  X,
+  Save,
+  RotateCcw,
+  Info
+} from 'lucide-react';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('business');
@@ -25,7 +34,8 @@ export default function SettingsPage() {
   });
   const [generatingAudience, setGeneratingAudience] = useState(false);
   const [generatingCompetitors, setGeneratingCompetitors] = useState(false);
-  const [message, setMessage] = useState('');
+  const [generatingDescription, setGeneratingDescription] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     loadProject();
@@ -51,8 +61,6 @@ export default function SettingsPage() {
         description: data.description || '',
       });
 
-      // Load audience data if exists
-      // Note: JSONB columns are automatically parsed by Supabase, no need for JSON.parse
       if (data.target_audiences || data.competitors) {
         setAudienceData({
           targetAudiences: Array.isArray(data.target_audiences) ? data.target_audiences : [],
@@ -68,7 +76,7 @@ export default function SettingsPage() {
     if (!project) return;
 
     setLoading(true);
-    setMessage('');
+    setSaveStatus('idle');
 
     try {
       const { error } = await supabase
@@ -84,10 +92,11 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      setMessage('Settings saved successfully!');
-      setTimeout(() => setMessage(''), 3000);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error: any) {
-      setMessage('Error: ' + error.message);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } finally {
       setLoading(false);
     }
@@ -97,7 +106,7 @@ export default function SettingsPage() {
     if (!project) return;
 
     setLoading(true);
-    setMessage('');
+    setSaveStatus('idle');
 
     try {
       const { error } = await supabase
@@ -110,10 +119,11 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      setMessage('Audience settings saved successfully!');
-      setTimeout(() => setMessage(''), 3000);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error: any) {
-      setMessage('Error: ' + error.message);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } finally {
       setLoading(false);
     }
@@ -138,12 +148,13 @@ export default function SettingsPage() {
 
   const handleGenerateAudiences = async () => {
     if (!formData.websiteUrl || !formData.description) {
-      setMessage('Please fill in your website URL and business description first');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
       return;
     }
 
     setGeneratingAudience(true);
-    setMessage('');
+    setSaveStatus('idle');
 
     try {
       const response = await fetch('/api/generate-audiences', {
@@ -158,7 +169,6 @@ export default function SettingsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        // Merge new audiences with existing ones
         const newAudiences = [...audienceData.targetAudiences];
         data.audiences.forEach((audience: string) => {
           if (!newAudiences.includes(audience)) {
@@ -166,13 +176,15 @@ export default function SettingsPage() {
           }
         });
         setAudienceData({ ...audienceData, targetAudiences: newAudiences });
-        setMessage('Audiences generated successfully!');
-        setTimeout(() => setMessage(''), 3000);
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus('idle'), 3000);
       } else {
-        setMessage('Failed to generate audiences');
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
       }
     } catch (error) {
-      setMessage('Error generating audiences');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } finally {
       setGeneratingAudience(false);
     }
@@ -197,12 +209,13 @@ export default function SettingsPage() {
 
   const handleGenerateCompetitors = async () => {
     if (!formData.websiteUrl || !formData.description) {
-      setMessage('Please fill in your website URL and business description first');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
       return;
     }
 
     setGeneratingCompetitors(true);
-    setMessage('');
+    setSaveStatus('idle');
 
     try {
       const response = await fetch('/api/generate-competitors', {
@@ -217,7 +230,6 @@ export default function SettingsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        // Merge new competitors with existing ones
         const newCompetitors = [...audienceData.competitors];
         data.competitors.forEach((competitor: string) => {
           if (!newCompetitors.includes(competitor)) {
@@ -225,13 +237,15 @@ export default function SettingsPage() {
           }
         });
         setAudienceData({ ...audienceData, competitors: newCompetitors });
-        setMessage('Competitors generated successfully!');
-        setTimeout(() => setMessage(''), 3000);
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus('idle'), 3000);
       } else {
-        setMessage('Failed to generate competitors');
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
       }
     } catch (error) {
-      setMessage('Error generating competitors');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } finally {
       setGeneratingCompetitors(false);
     }
@@ -239,11 +253,12 @@ export default function SettingsPage() {
 
   const handleGenerateDescription = async () => {
     if (!formData.websiteUrl) {
-      setMessage('Please enter website URL first');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
       return;
     }
 
-    setLoading(true);
+    setGeneratingDescription(true);
     try {
       const response = await fetch('/api/generate-description', {
         method: 'POST',
@@ -259,338 +274,389 @@ export default function SettingsPage() {
         const data = await response.json();
         setFormData(prev => ({ ...prev, description: data.description }));
       } else {
-        setMessage('Failed to generate description');
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
       }
     } catch (error) {
-      setMessage('Error generating description');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } finally {
-      setLoading(false);
+      setGeneratingDescription(false);
     }
   };
 
+  const resetToDefaults = () => {
+    if (confirm('Reset all settings to defaults?')) {
+      window.location.reload();
+    }
+  };
+
+  const tabs = [
+    { id: 'business', label: 'Business Info', icon: Building2 },
+    { id: 'audience', label: 'Audience & Competitors', icon: Users },
+  ];
+
   return (
-      <div className="p-8 max-w-5xl mx-auto">
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="flex gap-8">
-              <button
-                onClick={() => setActiveTab('business')}
-                className={`pb-4 px-1 border-b-2 font-medium transition-colors ${
-                  activeTab === 'business'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Business
-              </button>
-              <button
-                onClick={() => setActiveTab('audience')}
-                className={`pb-4 px-1 border-b-2 font-medium transition-colors ${
-                  activeTab === 'audience'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Audience and Competitors
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Content */}
-        {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.includes('Error')
-              ? 'bg-red-50 text-red-600 border border-red-200'
-              : 'bg-green-50 text-green-600 border border-green-200'
-          }`}>
-            {message}
-          </div>
-        )}
-
-        {activeTab === 'business' && (
-        <div className="bg-white rounded-lg border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            About your business
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Provide your business information to personalize content generation and SEO strategies
+    <div className="px-6 pb-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 py-4 border-b border-gray-200">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">General Settings</h1>
+          <p className="text-sm text-gray-500">
+            Configure your business information and target audience for AI-powered content generation
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={resetToDefaults}
+            className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1.5 border border-gray-200"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset
+          </button>
+          <button
+            onClick={activeTab === 'business' ? handleSave : handleSaveAudience}
+            disabled={loading}
+            className="px-4 py-1.5 text-sm bg-[#00AA45] text-white rounded-lg hover:bg-[#008837] transition-all flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {loading ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
+      </div>
 
-          <div className="space-y-6">
-            {/* Website URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Website to business
-              </label>
-              <Input
-                type="url"
-                placeholder="https://example.com"
-                value={formData.websiteUrl}
-                onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                className="bg-gray-50"
-              />
-            </div>
+      {/* Save Status */}
+      {saveStatus === 'success' && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          ✓ Settings saved successfully!
+        </div>
+      )}
+      {saveStatus === 'error' && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          ✗ Failed to save settings. Please try again.
+        </div>
+      )}
 
-            {/* Business Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Business name
-              </label>
-              <Input
-                type="text"
-                placeholder="Enter your business name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 border-b border-gray-200 overflow-x-auto">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'text-[#00AA45] border-b-2 border-[#00AA45]'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-            {/* Language and Country */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  Language
-                  <span className="ml-1 text-gray-400 cursor-help" title="Primary language for content">ⓘ</span>
-                </label>
-                <Select
-                  value={formData.language}
-                  onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                  options={LANGUAGES.map(l => ({
-                    value: l.code,
-                    label: l.name
-                  }))}
-                />
+      {/* Tab Content */}
+      <div className="space-y-4">
+        {/* Business Info Tab */}
+        {activeTab === 'business' && (
+          <div className="space-y-4">
+            {/* Business Details Card */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#00AA45]" />
+                Business Details
+              </h3>
+
+              <div className="space-y-4">
+                {/* Website URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Website URL
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com"
+                    value={formData.websiteUrl}
+                    onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                  />
+                </div>
+
+                {/* Business Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Business Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter your business name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                  />
+                </div>
+
+                {/* Language and Country */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                      Language
+                      <Info className="w-3.5 h-3.5 text-gray-400" />
+                    </label>
+                    <select
+                      value={formData.language}
+                      onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                    >
+                      {LANGUAGES.map(l => (
+                        <option key={l.code} value={l.code}>
+                          {l.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                      Country
+                      <Info className="w-3.5 h-3.5 text-gray-400" />
+                    </label>
+                    <select
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                    >
+                      {COUNTRIES.map(c => (
+                        <option key={c.code} value={c.code}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  Country
-                  <span className="ml-1 text-gray-400 cursor-help" title="Primary business location">ⓘ</span>
-                </label>
-                <Select
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  options={COUNTRIES.map(c => ({
-                    value: c.code,
-                    label: c.name
-                  }))}
-                />
-              </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Description
-                </label>
+            {/* Business Description Card */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Business Description
+                </h3>
                 <Button
-                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateDescription}
-                  loading={loading}
-                  disabled={!formData.websiteUrl || loading}
-                  className="text-sm"
+                  loading={generatingDescription}
+                  disabled={!formData.websiteUrl || generatingDescription}
+                  className="text-xs"
                 >
-                  Autocomplete With AI
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                  AI Generate
                 </Button>
               </div>
-              <Textarea
+
+              <textarea
                 placeholder="Describe your business, target audience, and what makes you unique..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={8}
-                className="resize-none"
+                rows={6}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent resize-none"
               />
+              <p className="text-xs text-gray-500 mt-2">
+                This helps AI understand your business and create more relevant content
+              </p>
             </div>
           </div>
-
-          {/* Save Button */}
-          <div className="mt-8 flex justify-end">
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              loading={loading}
-              onClick={handleSave}
-              className="min-w-[100px]"
-            >
-              Save
-            </Button>
-          </div>
-        </div>
         )}
 
+        {/* Audience & Competitors Tab */}
         {activeTab === 'audience' && (
-        <div className="bg-white rounded-lg border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Target Audience & Competitors
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Define your target audience and competitors to optimize content strategy
-          </p>
-
-          <div className="space-y-6">
-            {/* Target Audiences */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Target Audiences <span className="text-gray-400 text-xs ml-1">({audienceData.targetAudiences.length}/7)</span>
-                </label>
+          <div className="space-y-4">
+            {/* Target Audiences Card */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#00AA45]" />
+                    Target Audiences
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Define who your content is for. The more specific, the better AI can tailor content.
+                  </p>
+                </div>
                 <Button
-                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateAudiences}
                   loading={generatingAudience}
                   disabled={generatingAudience}
-                  className="text-sm"
+                  className="text-xs"
                 >
-                  Autocomplete With AI
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                  AI Generate
                 </Button>
               </div>
-              <p className="text-sm text-gray-500 mb-3">
-                Define who your content is for. The more specific you are, the better AI can tailor content for them.
-              </p>
 
-              <div className="flex gap-2 mb-4">
-                <Input
-                  type="text"
-                  placeholder="e.g., SaaS founders looking to improve SEO, Marketing teams needing content automation"
-                  value={audienceData.newAudience}
-                  onChange={(e) => setAudienceData({ ...audienceData, newAudience: e.target.value })}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddAudience();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddAudience}
-                  disabled={!audienceData.newAudience.trim()}
-                  className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  Add
-                </button>
-              </div>
-
-              {audienceData.targetAudiences.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {audienceData.targetAudiences.map((audience, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                      <span className="text-sm text-gray-700 flex-1">{audience}</span>
-                      <button
-                        onClick={() => handleRemoveAudience(index)}
-                        className="ml-2 text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+              <div className="space-y-4">
+                {/* Add Audience Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g., SaaS founders looking to improve SEO"
+                    value={audienceData.newAudience}
+                    onChange={(e) => setAudienceData({ ...audienceData, newAudience: e.target.value })}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddAudience();
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddAudience}
+                    disabled={!audienceData.newAudience.trim()}
+                    className="px-4 py-2 bg-[#00AA45] text-white rounded-lg text-sm font-medium hover:bg-[#008837] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    Add
+                  </button>
                 </div>
-              )}
+
+                {/* Audiences List */}
+                {audienceData.targetAudiences.length > 0 && (
+                  <div className="space-y-2">
+                    {audienceData.targetAudiences.map((audience, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                      >
+                        <span className="text-sm text-gray-700 flex-1">{audience}</span>
+                        <button
+                          onClick={() => handleRemoveAudience(index)}
+                          className="ml-3 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {audienceData.targetAudiences.length === 0 && (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No target audiences added yet</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Competitors */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Competitors <span className="text-gray-400 text-xs ml-1">({audienceData.competitors.length}/7)</span>
-                </label>
+            {/* Competitors Card */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-[#00AA45]" />
+                    Competitors
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Track what your competitors are ranking for to find content opportunities.
+                  </p>
+                </div>
                 <Button
-                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateCompetitors}
                   loading={generatingCompetitors}
                   disabled={generatingCompetitors}
-                  className="text-sm"
+                  className="text-xs"
                 >
-                  Autocomplete With AI
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                  AI Generate
                 </Button>
               </div>
-              <p className="text-sm text-gray-500 mb-3">
-                Track what your competitors are ranking for. We'll analyze their top keywords to find content opportunities.
-              </p>
 
-              <div className="flex gap-2 mb-4">
-                <Input
-                  type="text"
-                  placeholder="e.g., semrush.com, ahrefs.com, moz.com"
-                  value={audienceData.newCompetitor}
-                  onChange={(e) => setAudienceData({ ...audienceData, newCompetitor: e.target.value })}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddCompetitor();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddCompetitor}
-                  disabled={!audienceData.newCompetitor.trim()}
-                  className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  Add
-                </button>
-              </div>
-
-              {audienceData.competitors.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {audienceData.competitors.map((competitor, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100"
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-semibold">
-                            {competitor.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <span className="text-sm text-gray-700 truncate">{competitor}</span>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveCompetitor(index)}
-                        className="ml-2 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+              <div className="space-y-4">
+                {/* Add Competitor Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g., semrush.com, ahrefs.com"
+                    value={audienceData.newCompetitor}
+                    onChange={(e) => setAudienceData({ ...audienceData, newCompetitor: e.target.value })}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCompetitor();
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCompetitor}
+                    disabled={!audienceData.newCompetitor.trim()}
+                    className="px-4 py-2 bg-[#00AA45] text-white rounded-lg text-sm font-medium hover:bg-[#008837] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    Add
+                  </button>
                 </div>
-              )}
+
+                {/* Competitors List */}
+                {audienceData.competitors.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {audienceData.competitors.map((competitor, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">
+                              {competitor.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-700 truncate">{competitor}</span>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveCompetitor(index)}
+                          className="ml-2 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {audienceData.competitors.length === 0 && (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                    <Globe className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No competitors added yet</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* Save Button */}
-          <div className="mt-8 flex justify-end">
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              loading={loading}
-              onClick={handleSaveAudience}
-              className="min-w-[100px]"
-            >
-              Save
-            </Button>
-          </div>
-        </div>
         )}
-
       </div>
+
+      {/* Bottom Save Button */}
+      <div className="mt-6 flex justify-end border-t border-gray-200 pt-4">
+        <button
+          onClick={activeTab === 'business' ? handleSave : handleSaveAudience}
+          disabled={loading}
+          className="px-4 py-1.5 text-sm bg-[#00AA45] text-white rounded-lg hover:bg-[#008837] transition-all flex items-center gap-1.5 disabled:opacity-50"
+        >
+          <Save className="w-4 h-4" />
+          {loading ? 'Saving Changes...' : 'Save All Settings'}
+        </button>
+      </div>
+    </div>
   );
 }

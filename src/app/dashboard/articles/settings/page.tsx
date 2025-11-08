@@ -353,7 +353,7 @@ export default function ArticlesSettingsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <h3 className="text-base font-semibold text-gray-900 mb-3">Writing Style</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Writing Perspective
@@ -371,78 +371,29 @@ export default function ArticlesSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Complexity Level
+                    Word Count Range
                   </label>
-                  <select
-                    value={settings.complexityLevel}
-                    onChange={(e) => setSettings({ ...settings, complexityLevel: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
-                  >
-                    <option value="beginner">Beginner - Simple language</option>
-                    <option value="intermediate">Intermediate - Balanced</option>
-                    <option value="expert">Expert - Technical depth</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Word Count Range
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <input
-                      type="number"
-                      value={settings.minWordCount}
-                      onChange={(e) => setSettings({ ...settings, minWordCount: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                      placeholder="Min"
-                    />
-                    <span className="text-xs text-gray-500 mt-1 block">Minimum words</span>
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      value={settings.maxWordCount}
-                      onChange={(e) => setSettings({ ...settings, maxWordCount: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                      placeholder="Max"
-                    />
-                    <span className="text-xs text-gray-500 mt-1 block">Maximum words</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Configuration */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#00AA45]" />
-                AI Creativity Level
-              </h3>
-
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      Temperature: {settings.temperature}
-                    </label>
-                    <span className="text-xs text-gray-500">
-                      {settings.temperature < 0.4 ? 'Focused' : settings.temperature < 0.7 ? 'Balanced' : 'Creative'}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={settings.temperature}
-                    onChange={(e) => setSettings({ ...settings, temperature: parseFloat(e.target.value) })}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#00AA45]"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>Predictable</span>
-                    <span>Creative</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <input
+                        type="number"
+                        value={settings.minWordCount}
+                        onChange={(e) => setSettings({ ...settings, minWordCount: parseInt(e.target.value) })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                        placeholder="Min"
+                      />
+                      <span className="text-xs text-gray-500 mt-1 block">Minimum words</span>
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        value={settings.maxWordCount}
+                        onChange={(e) => setSettings({ ...settings, maxWordCount: parseInt(e.target.value) })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                        placeholder="Max"
+                      />
+                      <span className="text-xs text-gray-500 mt-1 block">Maximum words</span>
+                    </div>
                   </div>
                 </div>
 
@@ -472,38 +423,10 @@ export default function ArticlesSettingsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Target className="w-4 h-4 text-[#00AA45]" />
-                Keyword Optimization
+                SEO Optimization
               </h3>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Target Keyword Density Range
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={settings.keywordDensityMin}
-                        onChange={(e) => setSettings({ ...settings, keywordDensityMin: parseFloat(e.target.value) })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                      />
-                      <span className="text-xs text-gray-500 mt-1 block">Min %</span>
-                    </div>
-                    <div>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={settings.keywordDensityMax}
-                        onChange={(e) => setSettings({ ...settings, keywordDensityMax: parseFloat(e.target.value) })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                      />
-                      <span className="text-xs text-gray-500 mt-1 block">Max %</span>
-                    </div>
-                  </div>
-                </div>
-
+              <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div>
                     <div className="text-sm font-medium text-gray-900">Auto-generate Meta Description</div>
@@ -519,13 +442,7 @@ export default function ArticlesSettingsPage() {
                     <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00AA45] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00AA45]"></div>
                   </label>
                 </div>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Internal Linking</h3>
-
-              <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div>
                     <div className="text-sm font-medium text-gray-900">Automatic Internal Links</div>
@@ -542,39 +459,6 @@ export default function ArticlesSettingsPage() {
                   </label>
                 </div>
 
-                {settings.autoInternalLinks && (
-                  <div className="grid grid-cols-2 gap-3 pl-3 border-l-2 border-green-200">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Minimum Links
-                      </label>
-                      <input
-                        type="number"
-                        value={settings.minInternalLinks}
-                        onChange={(e) => setSettings({ ...settings, minInternalLinks: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Maximum Links
-                      </label>
-                      <input
-                        type="number"
-                        value={settings.maxInternalLinks}
-                        onChange={(e) => setSettings({ ...settings, maxInternalLinks: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Schema Markup & SEO</h3>
-
-              <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div>
                     <div className="text-sm font-medium text-gray-900">Enable Schema Markup</div>

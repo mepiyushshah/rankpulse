@@ -71,19 +71,103 @@ export async function GET(request: Request) {
         }
 
         // Get content plan keywords that haven't been used yet
-        const { data: unusedKeywords } = await supabase
+        // Apply content type and difficulty distribution if configured
+        const contentMix = setting.content_mix || {};
+        const difficultyDist = setting.difficulty_distribution || {};
+
+        let queryBuilder = supabase
           .from('content_ideas')
           .select('id, keyword, content_type, difficulty')
           .eq('project_id', project.id)
-          .is('article_id', null)
+          .is('article_id', null);
+
+        // If content mix is configured, prefer content types based on distribution
+        if (Object.keys(contentMix).length > 0) {
+          const { data: existingArticles } = await supabase
+            .from('articles')
+            .select('content_type')
+            .eq('project_id', project.id);
+
+          const existingCounts: Record<string, number> = {};
+          existingArticles?.forEach(a => {
+            existingCounts[a.content_type || 'article'] = (existingCounts[a.content_type || 'article'] || 0) + 1;
+          });
+
+          // Find the content type that's most behind its target percentage
+          const totalArticles = existingArticles?.length || 0;
+          let targetType = null;
+          let maxDeficit = 0;
+
+          for (const [type, percentage] of Object.entries(contentMix)) {
+            const targetCount = (totalArticles * (Number(percentage) / 100));
+            const currentCount = existingCounts[type] || 0;
+            const deficit = targetCount - currentCount;
+
+            if (deficit > maxDeficit) {
+              maxDeficit = deficit;
+              targetType = type;
+            }
+          }
+
+          if (targetType) {
+            queryBuilder = queryBuilder.eq('content_type', targetType);
+          }
+        }
+
+        // If difficulty distribution is configured, prefer difficulties based on distribution
+        if (Object.keys(difficultyDist).length > 0) {
+          const { data: existingArticles } = await supabase
+            .from('articles')
+            .select('difficulty')
+            .eq('project_id', project.id);
+
+          const existingCounts: Record<string, number> = {};
+          existingArticles?.forEach(a => {
+            existingCounts[a.difficulty || 'medium'] = (existingCounts[a.difficulty || 'medium'] || 0) + 1;
+          });
+
+          const totalArticles = existingArticles?.length || 0;
+          let targetDifficulty = null;
+          let maxDeficit = 0;
+
+          for (const [difficulty, percentage] of Object.entries(difficultyDist)) {
+            const targetCount = (totalArticles * (Number(percentage) / 100));
+            const currentCount = existingCounts[difficulty] || 0;
+            const deficit = targetCount - currentCount;
+
+            if (deficit > maxDeficit) {
+              maxDeficit = deficit;
+              targetDifficulty = difficulty;
+            }
+          }
+
+          if (targetDifficulty) {
+            queryBuilder = queryBuilder.eq('difficulty', targetDifficulty);
+          }
+        }
+
+        const { data: unusedKeywords } = await queryBuilder
           .order('created_at', { ascending: true })
           .limit(1);
 
         if (!unusedKeywords || unusedKeywords.length === 0) {
-          continue; // No keywords available
-        }
+          // If no keywords match the preferred type/difficulty, get any available
+          const { data: fallbackKeywords } = await supabase
+            .from('content_ideas')
+            .select('id, keyword, content_type, difficulty')
+            .eq('project_id', project.id)
+            .is('article_id', null)
+            .order('created_at', { ascending: true })
+            .limit(1);
 
-        const keywordData = unusedKeywords[0];
+          if (!fallbackKeywords || fallbackKeywords.length === 0) {
+            continue; // No keywords available
+          }
+
+          var keywordData = fallbackKeywords[0];
+        } else {
+          var keywordData = unusedKeywords[0];
+        }
 
         // Create article entry
         const { data: newArticle, error: articleError } = await supabase

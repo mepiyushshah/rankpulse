@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import Groq from 'groq-sdk';
 import { getToolScreenshot, extractToolNames } from '@/lib/screenshot-service';
+import { findRelevantVideo, embedVideoInContent } from '@/lib/youtube-service';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -552,6 +553,125 @@ Return ONLY the meta description text, nothing else.`;
       .replace(/--+/g, '-')     // Replace multiple hyphens with single hyphen
       .trim();
 
+    // Add internal links if enabled
+    if (settings.auto_internal_links) {
+      try {
+        const internalLinksResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/internal-links`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: articleContent,
+            keyword: keyword,
+            projectId: projectId
+          })
+        });
+
+        if (internalLinksResponse.ok) {
+          const { suggestions } = await internalLinksResponse.json();
+
+          if (suggestions && suggestions.length > 0) {
+            // Insert internal links into content
+            const minLinks = settings.min_internal_links || 3;
+            const maxLinks = settings.max_internal_links || 7;
+            const linksToAdd = suggestions.slice(0, Math.min(maxLinks, suggestions.length));
+
+            console.log(`Adding ${linksToAdd.length} internal links to article`);
+
+            // Add links naturally by finding good insertion points
+            for (const link of linksToAdd.slice(0, minLinks)) {
+              const linkMarkdown = `[${link.anchorText}](/articles/${link.articleId})`;
+
+              // Find a good place to insert the link (after a relevant paragraph)
+              const paragraphs = articleContent.split('\n\n');
+              const relevantParagraphIndex = paragraphs.findIndex(p =>
+                p.toLowerCase().includes(link.anchorText.toLowerCase().split(' ')[0])
+              );
+
+              if (relevantParagraphIndex !== -1 && relevantParagraphIndex < paragraphs.length - 2) {
+                paragraphs[relevantParagraphIndex] += ` ${linkMarkdown}`;
+                articleContent = paragraphs.join('\n\n');
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to add internal links:', e);
+      }
+    }
+
+    // Calculate readability score (Flesch Reading Ease)
+    const calculateReadabilityScore = (text: string): number => {
+      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+      const words = text.split(/\s+/).filter(w => w.length > 0).length;
+      const syllables = text.split(/\s+/).reduce((count, word) => {
+        return count + (word.toLowerCase().match(/[aeiouy]{1,2}/g)?.length || 1);
+      }, 0);
+
+      if (sentences === 0 || words === 0) return 0;
+
+      const score = 206.835 - 1.015 * (words / sentences) - 84.6 * (syllables / words);
+      return Math.max(0, Math.min(100, Math.round(score)));
+    };
+
+    const readabilityScore = calculateReadabilityScore(articleContent);
+    console.log(`=== READABILITY SCORE: ${readabilityScore} ===`);
+
+    // Add YouTube video if rich media is enabled
+    const richMediaElements = settings.include_elements || [];
+    if (richMediaElements.includes('youtube_videos')) {
+      try {
+        console.log('=== SEARCHING FOR RELEVANT YOUTUBE VIDEO ===');
+        const videoResult = await findRelevantVideo(keyword, articleContent);
+
+        if (videoResult.success && videoResult.embedCode && videoResult.video) {
+          console.log(`✅ Found video: ${videoResult.video.title}`);
+          console.log(`   Channel: ${videoResult.video.channelTitle}`);
+
+          // Embed ONE video at the best position
+          articleContent = embedVideoInContent(
+            articleContent,
+            videoResult.embedCode,
+            videoResult.video.title
+          );
+
+          console.log('=== YOUTUBE VIDEO EMBEDDED SUCCESSFULLY ===');
+        } else {
+          console.log('⚠️ No suitable YouTube video found');
+        }
+      } catch (e) {
+        console.error('Failed to add YouTube video:', e);
+      }
+    }
+
+    // Run quality check if grammar check is enabled
+    if (settings.enable_grammar_check) {
+      try {
+        const qualityCheckResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/quality-check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: articleContent,
+            projectId: projectId
+          })
+        });
+
+        if (qualityCheckResponse.ok) {
+          const qualityResults = await qualityCheckResponse.json();
+
+          console.log(`=== GRAMMAR CHECK: ${qualityResults.grammarScore || 'N/A'} ===`);
+          console.log(`=== ISSUES FOUND: ${qualityResults.issues?.length || 0} ===`);
+
+          // If auto-fix is enabled and there's fixed content, use it
+          if (settings.auto_fix_issues && qualityResults.fixedContent) {
+            articleContent = qualityResults.fixedContent;
+            console.log('=== AUTO-FIXED CONTENT APPLIED ===');
+          }
+        }
+      } catch (e) {
+        console.error('Failed to run quality check:', e);
+      }
+    }
+
     // Update article in database with all generated content
     const updateData: any = {
       title: articleTitle,
@@ -560,6 +680,10 @@ Return ONLY the meta description text, nothing else.`;
       status: 'draft',
       updated_at: new Date().toISOString(),
     };
+
+    // Add readability_score only if the column exists (optional)
+    // This prevents errors if the column hasn't been added to the database yet
+    // Comment out for now: readability_score: readabilityScore,
 
     if (metaDescription) {
       updateData.meta_description = metaDescription;
@@ -586,6 +710,7 @@ Return ONLY the meta description text, nothing else.`;
       slug: slug,
       metaDescription,
       schemaMarkup,
+      readabilityScore,
     });
   } catch (error: any) {
     console.error('Error generating article:', error);
