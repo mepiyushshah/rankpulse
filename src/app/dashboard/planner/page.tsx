@@ -1056,9 +1056,9 @@ function CalendarDayCell({
               onClick={() => onArticleClick(article)}
               className={`${getDifficultyColor(article.keyword_difficulty)} border rounded-md p-2 cursor-pointer hover:shadow-md transition-shadow`}
             >
-              {/* Title or Keyword */}
+              {/* Keyword */}
               <p className="text-xs font-bold text-gray-900 break-words">
-                {article.title && !article.title.startsWith('Article:') ? article.title : article.target_keyword}
+                {article.target_keyword}
               </p>
 
               {/* Volume and Difficulty */}

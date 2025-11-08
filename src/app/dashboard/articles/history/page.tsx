@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, ExternalLink, Eye, FileText, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Calendar, Edit2, ExternalLink, Eye, FileText, Loader2, Save, Search, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { ArticleViewer } from '@/components/planner/ArticleViewer';
+import { TipTapArticleEditor } from '@/components/planner/TipTapArticleEditor';
+import { marked } from 'marked';
 
 type Article = {
   id: string;
@@ -10,6 +13,7 @@ type Article = {
   title: string;
   content: string;
   meta_description: string | null;
+  slug: string | null;
   word_count: number | null;
   language: string;
   status: 'draft' | 'scheduled' | 'published';
@@ -28,6 +32,18 @@ export default function ContentHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+
+  // Edit states
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedSlug, setEditedSlug] = useState('');
+  const [editedMetaDescription, setEditedMetaDescription] = useState('');
+  const [isEditingMeta, setIsEditingMeta] = useState(false);
+  const [isSavingMeta, setIsSavingMeta] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     fetchArticles();
@@ -83,6 +99,529 @@ export default function ContentHistoryPage() {
     }
   };
 
+  // Handle article click
+  const handleArticleClick = (article: Article) => {
+    setSelectedArticle(article);
+    setIsEditing(false);
+    setEditedContent('');
+  };
+
+  // Handle back to list
+  const handleBackToList = () => {
+    setSelectedArticle(null);
+    setIsEditing(false);
+    setEditedContent('');
+  };
+
+  // Handle generate content
+  const handleGenerateContent = async () => {
+    if (!selectedArticle) return;
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: selectedArticle.project_id,
+          articleId: selectedArticle.id,
+          keyword: selectedArticle.target_keyword,
+          contentType: selectedArticle.content_type,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate article');
+      }
+
+      const data = await response.json();
+      alert('Article generated successfully!');
+      await fetchArticles(); // Reload the article data
+      // Update selected article with new content
+      const updatedArticle = articles.find(a => a.id === selectedArticle.id);
+      if (updatedArticle) {
+        setSelectedArticle(updatedArticle);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate article');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Handle start edit
+  const handleStartEdit = () => {
+    if (!selectedArticle?.content) return;
+
+    // Set the title for editing
+    setEditedTitle(selectedArticle.title || selectedArticle.target_keyword || '');
+
+    // Set slug (default to target_keyword if not set)
+    setEditedSlug(selectedArticle.slug || selectedArticle.target_keyword?.toLowerCase().replace(/\s+/g, '-') || '');
+
+    // Set meta description (default to empty if not set)
+    setEditedMetaDescription(selectedArticle.meta_description || '');
+
+    // Check if content is already HTML (contains HTML tags)
+    const isHTML = /<[a-z][\s\S]*>/i.test(selectedArticle.content);
+
+    if (isHTML) {
+      // Content is already HTML, use it directly
+      setEditedContent(selectedArticle.content);
+      setIsEditing(true);
+    } else {
+      // Content is markdown, convert to HTML
+      try {
+        const html = marked(selectedArticle.content, {
+          breaks: true,
+          gfm: true
+        }) as string;
+        setEditedContent(html);
+        setIsEditing(true);
+      } catch (error) {
+        console.error('Error converting markdown:', error);
+        setEditedContent(selectedArticle.content);
+        setIsEditing(true);
+      }
+    }
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedContent('');
+    setEditedTitle('');
+    setEditedSlug('');
+    setEditedMetaDescription('');
+  };
+
+  // Handle save edit
+  const handleSaveEdit = async () => {
+    if (!selectedArticle) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/articles/${selectedArticle.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editedTitle,
+          content: editedContent,
+          slug: editedSlug,
+          meta_description: editedMetaDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save changes');
+      }
+
+      alert('Changes saved successfully!');
+      setIsEditing(false);
+      await fetchArticles(); // Reload the article data
+      // Update selected article with new content
+      const updatedArticle = articles.find(a => a.id === selectedArticle.id);
+      if (updatedArticle) {
+        setSelectedArticle(updatedArticle);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to save changes');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle meta description edit
+  const handleStartEditMeta = () => {
+    if (!selectedArticle) return;
+    setEditedSlug(selectedArticle.slug || selectedArticle.target_keyword?.toLowerCase().replace(/\s+/g, '-') || '');
+    setEditedMetaDescription(selectedArticle.meta_description || '');
+    setIsEditingMeta(true);
+  };
+
+  const handleCancelEditMeta = () => {
+    setIsEditingMeta(false);
+    setEditedSlug('');
+    setEditedMetaDescription('');
+  };
+
+  const handleSaveMeta = async () => {
+    if (!selectedArticle) return;
+
+    setIsSavingMeta(true);
+    try {
+      const response = await fetch(`/api/articles/${selectedArticle.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: editedSlug,
+          meta_description: editedMetaDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save metadata');
+      }
+
+      alert('Metadata saved successfully!');
+      setIsEditingMeta(false);
+      await fetchArticles();
+      const updatedArticle = articles.find(a => a.id === selectedArticle.id);
+      if (updatedArticle) {
+        setSelectedArticle(updatedArticle);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to save metadata');
+    } finally {
+      setIsSavingMeta(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!selectedArticle) return;
+
+    // Check if article has content
+    if (!selectedArticle.content || selectedArticle.content.trim().length === 0) {
+      alert('Cannot publish an empty article. Please generate content first.');
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      // First, fetch the WordPress integration for this project
+      const integrationsResponse = await fetch(`/api/integrations?project_id=${selectedArticle.project_id}`);
+      const integrationsData = await integrationsResponse.json();
+
+      if (!integrationsResponse.ok) {
+        throw new Error('Failed to fetch integrations');
+      }
+
+      // Find the WordPress integration
+      const wordpressIntegration = integrationsData.integrations?.find(
+        (int: any) => int.platform === 'wordpress'
+      );
+
+      if (!wordpressIntegration) {
+        alert('No WordPress integration found. Please connect WordPress first in the Integrations page.');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to publish "${selectedArticle.title}" to WordPress?`)) {
+        return;
+      }
+
+      // Publish the article
+      const response = await fetch(`/api/articles/${selectedArticle.id}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          integration_id: wordpressIntegration.id,
+          status: 'publish', // Publish immediately
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to publish article');
+      }
+
+      const result = await response.json();
+      alert('Article published successfully to WordPress!');
+
+      // Reload articles to get updated status
+      await fetchArticles();
+      const updatedArticle = articles.find(a => a.id === selectedArticle.id);
+      if (updatedArticle) {
+        setSelectedArticle(updatedArticle);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to publish article');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  // If an article is selected, show the full-page detail view
+  if (selectedArticle) {
+    const hasContent = selectedArticle.content && selectedArticle.content.trim().length > 0;
+
+    return (
+      <div className="px-6 pb-6">
+        {/* Back Button */}
+        <div className="mb-4 py-4 border-b border-gray-200 flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBackToList}
+          >
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            Back to Content History
+          </Button>
+          <div className="flex gap-2">
+            {hasContent && !isEditing && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartEdit}
+                >
+                  <Edit2 className="mr-1.5 h-4 w-4" />
+                  Edit Article
+                </Button>
+                {selectedArticle.status !== 'published' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handlePublish}
+                    loading={isPublishing}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Send className="mr-1.5 h-4 w-4" />
+                    Publish to WordPress
+                  </Button>
+                )}
+              </>
+            )}
+            {isEditing && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                >
+                  <X className="mr-1.5 h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  loading={isSaving}
+                >
+                  <Save className="mr-1.5 h-4 w-4" />
+                  Save Changes
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Main Content with Sidebar Layout */}
+        <div className="flex gap-6">
+          {/* Main Article Content */}
+          <div className="flex-1 min-w-0">
+            {/* Content Area */}
+            {!hasContent ? (
+              <div className="text-center py-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 shadow-inner">
+                <div className="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Sparkles className="h-10 w-10 text-indigo-600" />
+                </div>
+                <h4 className="text-2xl font-bold text-gray-900 mb-3">
+                  Ready to Create Magic?
+                </h4>
+                <p className="text-base text-gray-600 mb-8 max-w-xl mx-auto leading-relaxed">
+                  Generate professional, SEO-optimized content for "<span className="font-semibold text-gray-900">{selectedArticle.target_keyword}</span>" powered by advanced AI
+                </p>
+                <Button
+                  variant="primary"
+                  onClick={handleGenerateContent}
+                  loading={isGenerating}
+                  className="px-8 py-3 text-base"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Generating Your Article...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Generate Article with AI
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : isEditing ? (
+              <TipTapArticleEditor
+                title={editedTitle}
+                content={editedContent}
+                onChange={setEditedContent}
+                onTitleChange={setEditedTitle}
+              />
+            ) : (
+              <ArticleViewer title={selectedArticle.title} content={selectedArticle.content} />
+            )}
+
+            {/* Action Footer */}
+            <div className="flex justify-between items-center gap-3 pt-8 mt-8 border-t border-gray-200">
+              <div>
+                {hasContent && !isEditing && (
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateContent}
+                    loading={isGenerating}
+                    className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Regenerate with AI
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Sidebar - Article Details */}
+          <div className="w-80 flex-shrink-0">
+            <div className="sticky top-6 space-y-4">
+              {/* Article Details Card */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
+                  Article Details
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Status */}
+                  {selectedArticle.status === 'published' && (
+                    <div className="pb-4 border-b border-gray-200">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm font-semibold text-green-800">Published</span>
+                          </div>
+                          {selectedArticle.published_url && (
+                            <a
+                              href={selectedArticle.published_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-green-700 hover:text-green-900 underline font-medium"
+                            >
+                              View Post →
+                            </a>
+                          )}
+                        </div>
+                        <button
+                          onClick={handlePublish}
+                          disabled={isPublishing}
+                          className="w-full px-3 py-1.5 text-xs font-medium text-green-700 bg-white border border-green-300 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
+                        >
+                          {isPublishing ? 'Updating...' : '🔄 Update on WordPress'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Target Keyword */}
+                  {selectedArticle.target_keyword && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Target Keyword</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {selectedArticle.target_keyword}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Content Type */}
+                  {selectedArticle.content_type && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Content Type</p>
+                      <span className="inline-block px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-lg">
+                        {selectedArticle.content_type}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SEO Metadata Card */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                    SEO Metadata
+                  </h3>
+                  {!isEditing && !isEditingMeta && (
+                    <button
+                      onClick={handleStartEditMeta}
+                      className="text-xs text-[#00AA45] hover:text-[#008936] font-medium"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {/* Slug */}
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Slug</label>
+                    {(isEditing || isEditingMeta) ? (
+                      <input
+                        type="text"
+                        value={editedSlug}
+                        onChange={(e) => setEditedSlug(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                        placeholder="article-slug"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {selectedArticle.slug || selectedArticle.target_keyword?.toLowerCase().replace(/\s+/g, '-') || 'not-set'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Meta Description */}
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">
+                      Meta Description {(isEditing || isEditingMeta) && `(${editedMetaDescription.length}/155)`}
+                    </label>
+                    {(isEditing || isEditingMeta) ? (
+                      <textarea
+                        value={editedMetaDescription}
+                        onChange={(e) => setEditedMetaDescription(e.target.value.slice(0, 155))}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00AA45] focus:border-transparent resize-none"
+                        placeholder="Enter meta description (max 155 characters)"
+                        rows={3}
+                        maxLength={155}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-700 break-words">
+                        {selectedArticle.meta_description || <span className="italic text-gray-400">Not set</span>}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Edit Mode Actions */}
+                  {isEditingMeta && !isEditing && (
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelEditMeta}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleSaveMeta}
+                        loading={isSavingMeta}
+                        className="flex-1"
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Otherwise show the list view
   return (
     <div className="px-6 pb-6">
       {/* Header */}
@@ -148,7 +687,7 @@ export default function ContentHistoryPage() {
                   <tr
                     key={article.id}
                     className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedArticle(article)}
+                    onClick={() => handleArticleClick(article)}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-start gap-3">
@@ -184,7 +723,7 @@ export default function ContentHistoryPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedArticle(article);
+                            handleArticleClick(article);
                           }}
                           className="p-2 text-primary hover:bg-primary-light rounded-lg transition-colors"
                           title="View Details"
@@ -219,101 +758,6 @@ export default function ContentHistoryPage() {
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* Article Detail Modal */}
-      {selectedArticle && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={() => setSelectedArticle(null)}
-        >
-          <div
-            className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-gray-200 flex items-start justify-between">
-              <div className="flex-1 pr-4">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {selectedArticle.title}
-                </h2>
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    Published
-                  </span>
-                  <span className="font-medium">{selectedArticle.word_count?.toLocaleString() || 0} words</span>
-                  <span>{formatDate(selectedArticle.published_at)}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedArticle(null)}
-                className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="px-6 py-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-              {selectedArticle.meta_description && (
-                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <h3 className="text-sm font-semibold text-blue-900 mb-2">Meta Description</h3>
-                  <p className="text-sm text-blue-800">{selectedArticle.meta_description}</p>
-                </div>
-              )}
-
-              {(selectedArticle.target_keyword || selectedArticle.content_type) && (
-                <div className="mb-6 grid grid-cols-2 gap-4">
-                  {selectedArticle.target_keyword && (
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1">Target Keyword</h3>
-                      <p className="text-sm text-gray-700">{selectedArticle.target_keyword}</p>
-                    </div>
-                  )}
-                  {selectedArticle.content_type && (
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1">Content Type</h3>
-                      <p className="text-sm text-gray-700">{selectedArticle.content_type}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="prose prose-sm max-w-none">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Content</h3>
-                <div
-                  className="text-gray-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: selectedArticle.content }}
-                />
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
-              <div className="flex gap-3">
-                {selectedArticle.published_url && (
-                  <a
-                    href={selectedArticle.published_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button variant="primary" size="md">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View Published
-                    </Button>
-                  </a>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="md"
-                onClick={() => setSelectedArticle(null)}
-              >
-                Close
-              </Button>
-            </div>
           </div>
         </div>
       )}
