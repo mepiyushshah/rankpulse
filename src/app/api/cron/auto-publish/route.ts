@@ -15,6 +15,9 @@ export async function POST(request: Request) {
     console.log('Auth header received:', authHeader ? 'Bearer ***' : 'none');
     console.log('Expected auth:', expectedAuth ? 'Bearer ***' : 'none');
     console.log('CRON_SECRET exists:', !!process.env.CRON_SECRET);
+    console.log('Auth header length:', authHeader?.length);
+    console.log('Expected auth length:', expectedAuth?.length);
+    console.log('Match:', authHeader === expectedAuth);
 
     if (authHeader !== expectedAuth) {
       console.error('Authorization failed');
