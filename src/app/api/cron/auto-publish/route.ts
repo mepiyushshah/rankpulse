@@ -10,16 +10,16 @@ export async function POST(request: Request) {
   try {
     // Verify cron secret to prevent unauthorized access
     const authHeader = request.headers.get('authorization');
-    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+    const expectedSecret = process.env.CRON_SECRET;
 
-    console.log('Auth header received:', authHeader ? 'Bearer ***' : 'none');
-    console.log('Expected auth:', expectedAuth ? 'Bearer ***' : 'none');
-    console.log('CRON_SECRET exists:', !!process.env.CRON_SECRET);
-    console.log('Auth header length:', authHeader?.length);
-    console.log('Expected auth length:', expectedAuth?.length);
-    console.log('Match:', authHeader === expectedAuth);
+    // Extract the token from "Bearer TOKEN" format
+    const providedToken = authHeader?.replace('Bearer ', '');
 
-    if (authHeader !== expectedAuth) {
+    console.log('CRON_SECRET exists:', !!expectedSecret);
+    console.log('Auth header exists:', !!authHeader);
+    console.log('Tokens match:', providedToken === expectedSecret);
+
+    if (!expectedSecret || providedToken !== expectedSecret) {
       console.error('Authorization failed');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
