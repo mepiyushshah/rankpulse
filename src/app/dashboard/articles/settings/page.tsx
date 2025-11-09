@@ -759,14 +759,11 @@ export default function ArticlesSettingsPage() {
                   <p className="text-xs text-gray-600 mb-2">Automatically include relevant media to enhance article engagement</p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { value: 'youtube_videos', label: 'YouTube Videos' },
-                      { value: 'infographics', label: 'Infographics' },
-                      { value: 'images', label: 'Relevant Images' },
-                      { value: 'diagrams', label: 'Diagrams/Charts' },
-                      { value: 'stats_boxes', label: 'Statistics Boxes' },
-                      { value: 'expert_quotes', label: 'Expert Quotes' },
+                      { value: 'youtube_videos', label: 'YouTube Videos', desc: 'Auto-embed relevant videos' },
+                      { value: 'stats_boxes', label: 'Statistics Boxes', desc: 'Highlighted key numbers' },
+                      { value: 'expert_quotes', label: 'Expert Quotes', desc: 'Relevant testimonials' },
                     ].map((element) => (
-                      <label key={element.value} className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer border border-gray-200">
+                      <label key={element.value} className="flex items-start gap-2 p-2.5 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer border border-gray-200">
                         <input
                           type="checkbox"
                           checked={settings.includeElements.includes(element.value)}
@@ -776,68 +773,14 @@ export default function ArticlesSettingsPage() {
                               : settings.includeElements.filter(el => el !== element.value)
                             setSettings({ ...settings, includeElements: elements })
                           }}
-                          className="w-4 h-4 text-[#00AA45] rounded accent-[#00AA45]"
+                          className="w-4 h-4 text-[#00AA45] rounded accent-[#00AA45] mt-0.5"
                         />
-                        <span className="text-xs text-gray-900">{element.label}</span>
+                        <div>
+                          <div className="text-xs font-medium text-gray-900">{element.label}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{element.desc}</div>
+                        </div>
                       </label>
                     ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quality Control */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Quality Assurance</h3>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Grammar Check</div>
-                    <div className="text-xs text-gray-600 mt-0.5">AI checks for grammar and spelling errors</div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.enableGrammarCheck}
-                      onChange={(e) => setSettings({ ...settings, enableGrammarCheck: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00AA45] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00AA45]"></div>
-                  </label>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Plagiarism Detection</div>
-                    <div className="text-xs text-gray-600 mt-0.5">Check content originality before publishing</div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.enablePlagiarismCheck}
-                      onChange={(e) => setSettings({ ...settings, enablePlagiarismCheck: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00AA45] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00AA45]"></div>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Target Readability Score: {settings.targetReadabilityScore}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={settings.targetReadabilityScore}
-                    onChange={(e) => setSettings({ ...settings, targetReadabilityScore: parseInt(e.target.value) })}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#00AA45]"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>Difficult</span>
-                    <span>Easy</span>
                   </div>
                 </div>
               </div>

@@ -99,10 +99,7 @@ export async function POST(request: Request) {
       'code': 'code snippets where relevant',
       'tables': 'tables to organize comparative data',
       'internal_links': 'suggestions for internal links (marked with [INTERNAL: anchor text])',
-      'youtube_videos': 'suggestions for relevant YouTube videos (marked with [VIDEO: search query])',
-      'infographics': 'suggestions for infographics (marked with [INFOGRAPHIC: description])',
-      'images': 'suggestions for images (marked with [IMAGE: description])',
-      'diagrams': 'suggestions for diagrams/charts (marked with [DIAGRAM: description])',
+      'youtube_videos': 'relevant YouTube videos will be automatically embedded',
       'stats_boxes': 'highlighted statistics boxes with key numbers',
       'expert_quotes': 'expert quotes or testimonials where relevant'
     };
