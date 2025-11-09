@@ -1,0 +1,31 @@
+name: Auto-Publish Scheduled Articles
+
+on:
+  schedule:
+    # Runs every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  auto-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Auto-Publish API
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST https://rankpulse.vercel.app/api/cron/auto-publish \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          
+          echo "Response Code: $http_code"
+          echo "Response Body: $body"
+          
+          if [ "$http_code" != "200" ]; then
+            echo "❌ Auto-publish failed with status code $http_code"
+            exit 1
+          fi
+          
+          echo "✅ Auto-publish completed successfully"
