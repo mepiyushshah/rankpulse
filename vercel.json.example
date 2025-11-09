@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/auto-generate-articles",
-      "schedule": "0 * * * *"
+      "path": "/api/cron/auto-publish",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
