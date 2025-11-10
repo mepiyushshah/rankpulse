@@ -28,13 +28,12 @@ export async function GET(request: Request) {
 
     const projectId = projects[0].id;
 
-    // Fetch only published articles for the project, ordered by most recent first
+    // Fetch all articles for the project (draft, scheduled, published), ordered by most recent first
     const { data: articles, error: articlesError } = await supabase
       .from('articles')
       .select('*')
       .eq('project_id', projectId)
-      .eq('status', 'published')
-      .order('published_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (articlesError) {
       console.error('Error fetching articles:', articlesError);

@@ -482,8 +482,8 @@ export default function ContentHistoryPage() {
 
                 <div className="space-y-4">
                   {/* Status */}
-                  {selectedArticle.status === 'published' && (
-                    <div className="pb-4 border-b border-gray-200">
+                  <div className="pb-4 border-b border-gray-200">
+                    {selectedArticle.status === 'published' && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -509,8 +509,49 @@ export default function ContentHistoryPage() {
                           {isPublishing ? 'Updating...' : '🔄 Update on WordPress'}
                         </button>
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {selectedArticle.status === 'scheduled' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-semibold text-blue-800">Scheduled</span>
+                        </div>
+                        {selectedArticle.scheduled_at && (
+                          <div className="flex items-center gap-2 text-xs text-blue-700">
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span>Will publish on {formatDate(selectedArticle.scheduled_at)}</span>
+                          </div>
+                        )}
+                        <button
+                          onClick={handlePublish}
+                          disabled={isPublishing}
+                          className="w-full px-3 py-1.5 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors disabled:opacity-50"
+                        >
+                          {isPublishing ? 'Publishing...' : 'Publish Now'}
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedArticle.status === 'draft' && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                          <span className="text-sm font-semibold text-gray-700">Draft</span>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          This article is saved as a draft and not published yet.
+                        </p>
+                        <button
+                          onClick={handlePublish}
+                          disabled={isPublishing}
+                          className="w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        >
+                          {isPublishing ? 'Publishing...' : 'Publish to WordPress'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Target Keyword */}
                   {selectedArticle.target_keyword && (
@@ -672,10 +713,13 @@ export default function ContentHistoryPage() {
                     Article
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Word Count
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Published Date
+                    Date
                   </th>
                   <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Actions
@@ -709,13 +753,49 @@ export default function ContentHistoryPage() {
                         </div>
                       </div>
                     </td>
+                    <td className="px-6 py-4">
+                      {article.status === 'published' && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          Published
+                        </span>
+                      )}
+                      {article.status === 'scheduled' && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                          Scheduled
+                        </span>
+                      )}
+                      {article.status === 'draft' && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                          Draft
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-700 font-medium">
                       {article.word_count?.toLocaleString() || '0'} words
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                        {formatDate(article.published_at)}
+                      <div className="flex flex-col gap-1 text-sm text-gray-600">
+                        {article.status === 'published' && article.published_at && (
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                            {formatDate(article.published_at)}
+                          </div>
+                        )}
+                        {article.status === 'scheduled' && article.scheduled_at && (
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-2 text-blue-400" />
+                            {formatDate(article.scheduled_at)}
+                          </div>
+                        )}
+                        {article.status === 'draft' && (
+                          <div className="flex items-center text-gray-500">
+                            <Calendar className="w-4 h-4 mr-2 text-gray-300" />
+                            Not scheduled
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">

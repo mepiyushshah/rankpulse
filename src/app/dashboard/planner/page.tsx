@@ -1078,6 +1078,16 @@ function CalendarDayCell({
                     ✓ Published
                   </span>
                 )}
+                {article.status === 'scheduled' && (
+                  <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                    📅 Scheduled
+                  </span>
+                )}
+                {article.status === 'draft' && (
+                  <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    📝 Draft
+                  </span>
+                )}
               </div>
             </div>
           ))
