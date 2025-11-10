@@ -6,6 +6,7 @@ import { Settings, Sparkles, Target, Calendar, Zap, ChevronRight, Save, RotateCc
 
 export default function ArticlesSettingsPage() {
   const [activeTab, setActiveTab] = useState('content')
+
   const [settings, setSettings] = useState({
     // Content & AI Settings
     brandVoice: 'professional',
@@ -378,7 +379,14 @@ export default function ArticlesSettingsPage() {
                   <select
                     value={settings.writingPerspective}
                     onChange={(e) => setSettings({ ...settings, writingPerspective: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent appearance-none bg-white"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1.5em 1.5em',
+                      paddingRight: '2.5rem',
+                    }}
                   >
                     <option value="first_person">First Person (We/I)</option>
                     <option value="second_person">Second Person (You)</option>
@@ -731,7 +739,14 @@ export default function ArticlesSettingsPage() {
                   <select
                     value={settings.headingStructure}
                     onChange={(e) => setSettings({ ...settings, headingStructure: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg appearance-none bg-white"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1.5em 1.5em',
+                      paddingRight: '2.5rem',
+                    }}
                   >
                     <option value="hierarchical">Hierarchical (H2 → H3 → H4)</option>
                     <option value="flat">Flat (H2 only)</option>
@@ -805,55 +820,21 @@ export default function ArticlesSettingsPage() {
           </div>
         )}
 
-        {/* Featured Images Tab */}
+        {/* Featured Images Tab - Split Screen Layout */}
         {activeTab === 'featured_images' && (
-          <div className="space-y-4">
-            {/* Image Style Selection */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Image className="w-4 h-4 text-[#00AA45]" />
-                Image Style
-              </h3>
-              <p className="text-xs text-gray-600 mb-4">
-                Choose the visual style for your automatically generated featured images
-              </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Side - Settings (Scrollable) */}
+            <div className="space-y-4 lg:max-h-[calc(100vh-280px)] lg:overflow-y-auto lg:pr-4">
+              {/* Brand Color */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h3 className="text-base font-semibold text-gray-900 mb-3">Brand Color</h3>
+                <p className="text-xs text-gray-600 mb-4">
+                  Choose your brand color - text color will automatically adjust for best contrast
+                </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {[
-                  { value: 'gradient_modern', label: 'Gradient Modern', desc: 'Smooth gradient backgrounds with clean typography' },
-                  { value: 'minimalist', label: 'Minimalist', desc: 'Simple, clean design with focus on text' },
-                  { value: 'tech_saas', label: 'Tech/SaaS', desc: 'Grid patterns and geometric shapes' },
-                  { value: 'bold_typography', label: 'Bold Typography', desc: 'Large, impactful text-focused design' },
-                  { value: 'watercolor', label: 'Watercolor', desc: 'Artistic fluid shapes and organic flow' },
-                  { value: 'sketch', label: 'Sketch', desc: 'Hand-drawn style with playful elements' },
-                ].map((style) => (
-                  <button
-                    key={style.value}
-                    onClick={() => setSettings({ ...settings, featuredImageStyle: style.value })}
-                    className={`p-3 rounded-lg border text-left transition-all ${
-                      settings.featuredImageStyle === style.value
-                        ? 'border-[#00AA45] bg-green-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="text-sm font-medium text-gray-900">{style.label}</div>
-                    <div className="text-xs text-gray-600 mt-1">{style.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Brand Colors */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Brand Colors</h3>
-              <p className="text-xs text-gray-600 mb-4">
-                Customize the color scheme to match your brand identity
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Primary Color
+                    Color
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -871,199 +852,166 @@ export default function ArticlesSettingsPage() {
                     />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Secondary Color (Optional)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={settings.featuredImageSecondaryColor || '#008837'}
-                      onChange={(e) => setSettings({ ...settings, featuredImageSecondaryColor: e.target.value })}
-                      className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={settings.featuredImageSecondaryColor || ''}
-                      onChange={(e) => setSettings({ ...settings, featuredImageSecondaryColor: e.target.value })}
-                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
-                      placeholder="#008837"
-                    />
-                  </div>
-                </div>
               </div>
 
-              {/* Quick Color Presets */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quick Presets</label>
-                <div className="flex gap-2 flex-wrap">
+              {/* Image Style Selection */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h3 className="text-base font-semibold text-gray-900 mb-3">Image Style</h3>
+                <p className="text-xs text-gray-600 mb-4">
+                  Choose the visual style for your automatically generated featured images
+                </p>
+
+                <div className="grid grid-cols-1 gap-3">
                   {[
-                    { primary: '#00AA45', secondary: '#008837', label: 'RankPulse Green' },
-                    { primary: '#3B82F6', secondary: '#1E40AF', label: 'Blue' },
-                    { primary: '#EF4444', secondary: '#B91C1C', label: 'Red' },
-                    { primary: '#F59E0B', secondary: '#D97706', label: 'Orange' },
-                    { primary: '#8B5CF6', secondary: '#6D28D9', label: 'Purple' },
-                    { primary: '#10B981', secondary: '#047857', label: 'Emerald' },
-                  ].map((preset) => (
+                    { value: 'gradient_modern', label: 'Gradient Modern', desc: 'Smooth gradient backgrounds with clean typography' },
+                  ].map((style) => (
                     <button
-                      key={preset.label}
-                      onClick={() => setSettings({
-                        ...settings,
-                        featuredImagePrimaryColor: preset.primary,
-                        featuredImageSecondaryColor: preset.secondary
-                      })}
-                      className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-200 hover:border-gray-300 transition-all flex items-center gap-2"
+                      key={style.value}
+                      onClick={() => setSettings({ ...settings, featuredImageStyle: style.value })}
+                      className={`p-3 rounded-lg border text-left transition-all ${
+                        settings.featuredImageStyle === style.value
+                          ? 'border-[#00AA45] bg-green-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
                     >
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ background: `linear-gradient(135deg, ${preset.primary}, ${preset.secondary})` }}
-                      />
-                      {preset.label}
+                      <div className="text-sm font-medium text-gray-900">{style.label}</div>
+                      <div className="text-xs text-gray-600 mt-1">{style.desc}</div>
                     </button>
                   ))}
                 </div>
               </div>
-            </div>
 
-            {/* Typography & Layout */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Typography & Layout</h3>
+              {/* Typography & Layout */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h3 className="text-base font-semibold text-gray-900 mb-3">Typography & Layout</h3>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Font Style
-                  </label>
-                  <select
-                    value={settings.featuredImageFontStyle}
-                    onChange={(e) => setSettings({ ...settings, featuredImageFontStyle: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
-                  >
-                    <option value="bold">Bold & Impactful</option>
-                    <option value="elegant">Elegant & Refined</option>
-                    <option value="modern">Modern & Clean</option>
-                    <option value="playful">Playful & Friendly</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Text Position
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { value: 'center', label: 'Center' },
-                      { value: 'left', label: 'Left' },
-                      { value: 'right', label: 'Right' },
-                    ].map((position) => (
-                      <button
-                        key={position.value}
-                        onClick={() => setSettings({ ...settings, featuredImageTextPosition: position.value })}
-                        className={`py-2 rounded-lg text-sm font-medium transition-all ${
-                          settings.featuredImageTextPosition === position.value
-                            ? 'bg-[#00AA45] text-white'
-                            : 'bg-gray-50 text-gray-700 border border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        {position.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Image Settings */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Image Settings</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Image Dimensions
-                  </label>
-                  <select
-                    value={settings.featuredImageDimensions}
-                    onChange={(e) => setSettings({ ...settings, featuredImageDimensions: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
-                  >
-                    <option value="1200x630">1200x630 (Recommended - Open Graph)</option>
-                    <option value="1920x1080">1920x1080 (Full HD)</option>
-                    <option value="1280x720">1280x720 (HD)</option>
-                    <option value="800x600">800x600 (Standard)</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    1200x630 is optimal for social media sharing (Facebook, Twitter, LinkedIn)
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="space-y-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Include Logo Overlay</div>
-                    <div className="text-xs text-gray-600 mt-0.5">Add your logo to the featured image</div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.featuredImageIncludeLogo}
-                      onChange={(e) => setSettings({ ...settings, featuredImageIncludeLogo: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00AA45] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00AA45]"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Preview Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Preview</h3>
-              <p className="text-xs text-gray-600 mb-4">
-                See how your featured image will look with a sample title
-              </p>
-
-              <div className="bg-gray-100 rounded-lg p-6 flex items-center justify-center min-h-[200px]">
-                <div
-                  className="relative w-full max-w-2xl rounded-lg overflow-hidden shadow-lg"
-                  style={{
-                    background: settings.featuredImageStyle === 'gradient_modern'
-                      ? `linear-gradient(135deg, ${settings.featuredImagePrimaryColor}, ${settings.featuredImageSecondaryColor})`
-                      : settings.featuredImageStyle === 'minimalist'
-                      ? settings.featuredImagePrimaryColor
-                      : `linear-gradient(135deg, ${settings.featuredImagePrimaryColor}20, ${settings.featuredImageSecondaryColor}20)`,
-                    aspectRatio: '1.91/1',
-                  }}
-                >
-                  <div className={`absolute inset-0 flex items-center ${
-                    settings.featuredImageTextPosition === 'center' ? 'justify-center text-center' :
-                    settings.featuredImageTextPosition === 'left' ? 'justify-start text-left pl-12' :
-                    'justify-end text-right pr-12'
-                  }`}>
-                    <h2
-                      className="text-white font-bold px-8"
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Font Style
+                    </label>
+                    <select
+                      value={settings.featuredImageFontStyle}
+                      onChange={(e) => setSettings({ ...settings, featuredImageFontStyle: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent appearance-none bg-white"
                       style={{
-                        fontSize: settings.featuredImageFontStyle === 'bold' ? '2rem' : '1.75rem',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                        maxWidth: '80%',
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                        backgroundPosition: 'right 0.5rem center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: '1.5em 1.5em',
+                        paddingRight: '2.5rem',
                       }}
                     >
-                      How to Boost Your SEO Rankings in 2025
-                    </h2>
+                      <option value="bold">Bold & Impactful</option>
+                      <option value="modern">Modern & Clean</option>
+                    </select>
                   </div>
 
-                  {settings.featuredImageIncludeLogo && (
-                    <div className="absolute bottom-4 right-4 bg-white/90 px-3 py-1.5 rounded-lg">
-                      <span className="text-sm font-semibold" style={{ color: settings.featuredImagePrimaryColor }}>
-                        RankPulse
-                      </span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Text Position
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: 'left', label: 'Left' },
+                        { value: 'center', label: 'Center' },
+                        { value: 'right', label: 'Right' },
+                      ].map((position) => (
+                        <button
+                          key={position.value}
+                          onClick={() => setSettings({ ...settings, featuredImageTextPosition: position.value })}
+                          className={`py-2 rounded-lg text-sm font-medium transition-all ${
+                            settings.featuredImageTextPosition === position.value
+                              ? 'bg-[#00AA45] text-white'
+                              : 'bg-gray-50 text-gray-700 border border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          {position.label}
+                        </button>
+                      ))}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-                💡 Featured images will be automatically generated when you create new articles
+            </div>
+
+            {/* Right Side - Live Preview (Sticky) */}
+            <div className="lg:sticky lg:top-6 lg:self-start">
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold text-gray-900">Live Preview</h3>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                    Real-time
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mb-4">
+                  See changes instantly as you customize
+                </p>
+
+                <div className="bg-gray-100 rounded-lg p-6 flex items-center justify-center">
+                  <div
+                    className="relative w-full rounded-lg overflow-hidden shadow-lg"
+                    style={{
+                      aspectRatio: '1.91/1',
+                      background: settings.featuredImageStyle === 'gradient_modern'
+                        ? `linear-gradient(135deg, ${settings.featuredImagePrimaryColor}, ${settings.featuredImagePrimaryColor}dd, ${settings.featuredImagePrimaryColor}bb)`
+                        : `linear-gradient(135deg, ${settings.featuredImagePrimaryColor}15, ${settings.featuredImagePrimaryColor}25)`,
+                    }}
+                  >
+                    {/* Text Content */}
+                    <div className={`absolute inset-0 flex items-center ${
+                      settings.featuredImageTextPosition === 'center' ? 'justify-center text-center' :
+                      settings.featuredImageTextPosition === 'left' ? 'justify-start text-left pl-12' :
+                      'justify-end text-right pr-12'
+                    }`}>
+                      <h2
+                        className="font-bold px-8 text-white"
+                        style={{
+                          fontSize: settings.featuredImageFontStyle === 'bold' ? '2.5rem' : '2.25rem',
+                          textShadow: '0 3px 8px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3)',
+                          maxWidth: '80%',
+                          letterSpacing: settings.featuredImageFontStyle === 'modern' ? '-0.02em' : 'normal',
+                        }}
+                      >
+                        How to Boost Your SEO Rankings in 2025
+                      </h2>
+                    </div>
+
+                    {settings.featuredImageIncludeLogo && (
+                      <div className="absolute bottom-4 right-4 bg-white/90 px-3 py-1.5 rounded-lg">
+                        <span className="text-sm font-semibold" style={{ color: settings.featuredImagePrimaryColor }}>
+                          RankPulse
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Settings Summary */}
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Style:</span>
+                    <span className="font-medium text-gray-900 capitalize">{settings.featuredImageStyle.replace('_', ' ')}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Dimensions:</span>
+                    <span className="font-medium text-gray-900">{settings.featuredImageDimensions}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Font Style:</span>
+                    <span className="font-medium text-gray-900 capitalize">{settings.featuredImageFontStyle}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Text Position:</span>
+                    <span className="font-medium text-gray-900 capitalize">{settings.featuredImageTextPosition}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                  💡 Featured images will be automatically generated when you create new articles
+                </div>
               </div>
             </div>
           </div>
