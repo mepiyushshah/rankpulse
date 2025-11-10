@@ -126,6 +126,13 @@ export async function POST(request: NextRequest) {
           enable_plagiarism_check: settings.enablePlagiarismCheck,
           target_readability_score: settings.targetReadabilityScore,
           auto_fix_issues: settings.autoFixIssues,
+          featured_image_style: settings.featuredImageStyle,
+          featured_image_primary_color: settings.featuredImagePrimaryColor,
+          featured_image_secondary_color: settings.featuredImageSecondaryColor,
+          featured_image_font_style: settings.featuredImageFontStyle,
+          featured_image_text_position: settings.featuredImageTextPosition,
+          featured_image_dimensions: settings.featuredImageDimensions,
+          featured_image_include_logo: settings.featuredImageIncludeLogo,
         })
         .eq('project_id', projectId)
         .select()
@@ -169,6 +176,13 @@ export async function POST(request: NextRequest) {
           enable_plagiarism_check: settings.enablePlagiarismCheck,
           target_readability_score: settings.targetReadabilityScore,
           auto_fix_issues: settings.autoFixIssues,
+          featured_image_style: settings.featuredImageStyle,
+          featured_image_primary_color: settings.featuredImagePrimaryColor,
+          featured_image_secondary_color: settings.featuredImageSecondaryColor,
+          featured_image_font_style: settings.featuredImageFontStyle,
+          featured_image_text_position: settings.featuredImageTextPosition,
+          featured_image_dimensions: settings.featuredImageDimensions,
+          featured_image_include_logo: settings.featuredImageIncludeLogo,
         })
         .select()
         .single()

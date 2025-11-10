@@ -12,15 +12,27 @@ export default function Home() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Set a much smaller canvas size for better performance
+    const scale = 0.25; // Use 25% of the actual size
     const setCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = window.innerWidth * scale;
+      canvas.height = window.innerHeight * scale;
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
     };
     setCanvasSize();
     window.addEventListener('resize', setCanvasSize);
 
     let animationId: number;
+    let frameCount = 0;
     const animate = () => {
+      // Only update every 3 frames for better performance
+      frameCount++;
+      if (frameCount % 3 !== 0) {
+        animationId = requestAnimationFrame(animate);
+        return;
+      }
+
       const imageData = ctx.createImageData(canvas.width, canvas.height);
       const data = imageData.data;
 
