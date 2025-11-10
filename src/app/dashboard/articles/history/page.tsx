@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calendar, Edit2, ExternalLink, Eye, FileText, Loader2, Save, Search, Send, Sparkles, Trash2, X } from 'lucide-react';
 import { ArticleViewer } from '@/components/planner/ArticleViewer';
 import { TipTapArticleEditor } from '@/components/planner/TipTapArticleEditor';
+import { IntegrationAlert } from '@/components/IntegrationAlert';
 import { marked } from 'marked';
 
 type Article = {
@@ -356,7 +357,7 @@ export default function ContentHistoryPage() {
             onClick={handleBackToList}
           >
             <ArrowLeft className="mr-1.5 h-4 w-4" />
-            Back to Content History
+            Back to Articles History
           </Button>
           <div className="flex gap-2">
             {hasContent && !isEditing && (
@@ -667,11 +668,14 @@ export default function ContentHistoryPage() {
     <div className="px-6 pb-6">
       {/* Header */}
       <div className="mb-6 py-4 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Content History</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Articles History</h1>
         <p className="text-sm text-gray-500">
           View and manage all your published articles
         </p>
       </div>
+
+      {/* Integration Alert */}
+      <IntegrationAlert className="mb-6" />
 
       {/* Search */}
       <div className="mb-6">
@@ -700,7 +704,7 @@ export default function ContentHistoryPage() {
           <p className="text-gray-600">
             {searchQuery
               ? 'Try adjusting your search'
-              : 'Publish articles from the Content Planner to see them here'}
+              : 'Publish articles from the Articles Planner to see them here'}
           </p>
         </div>
       ) : (

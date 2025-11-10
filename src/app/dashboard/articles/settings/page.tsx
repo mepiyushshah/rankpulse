@@ -506,7 +506,7 @@ export default function ArticlesSettingsPage() {
                 </div>
 
                 {settings.autoGenerate && (
-                  <div className="space-y-4 pl-3 border-l-2 border-green-200">
+                  <div className="space-y-4 pl-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Articles Per Week: {settings.articlesPerWeek}

@@ -7,6 +7,7 @@ import { KeywordModal } from '@/components/keywords/KeywordModal';
 import { GenerateContentModal, GenerationConfig } from '@/components/planner/GenerateContentModal';
 import { TipTapArticleEditor } from '@/components/planner/TipTapArticleEditor';
 import { ArticleViewer } from '@/components/planner/ArticleViewer';
+import { IntegrationAlert } from '@/components/IntegrationAlert';
 import { supabase } from '@/lib/supabase';
 import {
   ChevronLeft,
@@ -897,9 +898,9 @@ export default function ContentPlannerPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 py-4 border-b border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Content Planner</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Articles Planner</h1>
           <p className="text-sm text-gray-500">
-            AI-powered monthly content calendar for your business
+            AI-powered monthly article calendar for your business
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -924,6 +925,9 @@ export default function ContentPlannerPage() {
           </Button>
         </div>
       </div>
+
+      {/* Integration Alert */}
+      <IntegrationAlert className="mb-6" />
 
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-4">

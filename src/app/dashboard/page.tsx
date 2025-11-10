@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { IntegrationAlert } from '@/components/IntegrationAlert';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -221,6 +222,9 @@ function Content() {
           </p>
         </div>
       </div>
+
+      {/* Integration Alert */}
+      <IntegrationAlert className="mb-6" />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
