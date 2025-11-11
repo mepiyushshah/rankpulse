@@ -201,19 +201,19 @@ export function ArticleDetailModal({
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
                 <span className="px-4 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-full">
-                  {article.content_type}
+                  {displayArticle.content_type}
                 </span>
-                <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${getDifficultyColor(article.keyword_difficulty)}`}>
-                  Difficulty: {article.keyword_difficulty}
+                <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${getDifficultyColor(displayArticle.keyword_difficulty)}`}>
+                  Difficulty: {displayArticle.keyword_difficulty}
                 </span>
                 <span className="px-4 py-1.5 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">
-                  {article.search_volume >= 1000
-                    ? `${(article.search_volume / 1000).toFixed(1)}K`
-                    : article.search_volume} searches/mo
+                  {displayArticle.search_volume >= 1000
+                    ? `${(displayArticle.search_volume / 1000).toFixed(1)}K`
+                    : displayArticle.search_volume} searches/mo
                 </span>
               </div>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-3">
-                {article.target_keyword}
+                {displayArticle.target_keyword}
               </h1>
               <p className="text-lg text-gray-600">
                 Scheduled for {scheduledDate.toLocaleDateString('en-US', {
@@ -222,9 +222,9 @@ export function ArticleDetailModal({
                   year: 'numeric'
                 })}
               </p>
-              {(publishedUrl || article.published_url) && (
+              {(publishedUrl || displayArticle.published_url) && (
                 <a
-                  href={publishedUrl || article.published_url}
+                  href={publishedUrl || displayArticle.published_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 mt-2 text-green-600 hover:text-green-700 font-medium"
@@ -252,7 +252,7 @@ export function ArticleDetailModal({
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <Send className="mr-1.5 h-4 w-4" />
-                    {article.cms_post_id ? 'Update on WordPress' : 'Publish to WordPress'}
+                    {displayArticle.cms_post_id ? 'Update on WordPress' : 'Publish to WordPress'}
                   </Button>
                 </>
               )}
@@ -294,7 +294,7 @@ export function ArticleDetailModal({
                 Ready to Create Magic?
               </h4>
               <p className="text-base text-gray-600 mb-8 max-w-xl mx-auto leading-relaxed">
-                Generate professional, SEO-optimized content for "<span className="font-semibold text-gray-900">{article.target_keyword}</span>" powered by advanced AI
+                Generate professional, SEO-optimized content for "<span className="font-semibold text-gray-900">{displayArticle.target_keyword}</span>" powered by advanced AI
               </p>
               <Button
                 variant="primary"
@@ -335,7 +335,7 @@ export function ArticleDetailModal({
               />
             </div>
           ) : (
-            <ArticleViewer title={article.title} content={article.content} />
+            <ArticleViewer title={displayArticle.title} content={displayArticle.content} />
           )}
           </div>
 
@@ -384,10 +384,10 @@ export function ArticleDetailModal({
       </div>
 
       {/* Publish Dialog */}
-      {showPublishDialog && projectId && (
+      {showPublishDialog && projectId && displayArticle && (
         <PublishArticleDialog
-          articleId={article.id}
-          articleTitle={article.title || article.target_keyword}
+          articleId={displayArticle.id}
+          articleTitle={displayArticle.title || displayArticle.target_keyword}
           projectId={projectId}
           onClose={() => setShowPublishDialog(false)}
           onSuccess={(url) => {
