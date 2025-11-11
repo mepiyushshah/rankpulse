@@ -73,8 +73,6 @@ export async function POST(
     marked.setOptions({
       gfm: true, // GitHub Flavored Markdown
       breaks: true, // Convert \n to <br>
-      headerIds: false, // Don't add IDs to headers
-      mangle: false, // Don't escape email addresses
     });
 
     let htmlContent = await marked(article.content || '');
