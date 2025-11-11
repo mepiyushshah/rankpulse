@@ -104,8 +104,8 @@ export async function POST(
         }
 
         // First row with <th> tags is the header
-        const headerRow = rows.find(row => row.includes('<th'));
-        const bodyRows = rows.filter(row => row !== headerRow);
+        const headerRow = rows.find((row: string) => row.includes('<th'));
+        const bodyRows = rows.filter((row: string) => row !== headerRow);
 
         let restructured = '<table class="has-fixed-layout" style="border-collapse: collapse; width: 100%; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">';
 
