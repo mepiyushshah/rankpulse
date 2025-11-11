@@ -74,8 +74,10 @@ export async function findRelevantVideo(
       publishedAt: item.snippet.publishedAt,
     };
 
-    // Generate embed code
-    const embedCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${video.videoId}" title="${video.title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    // Use WordPress oEmbed URL format instead of iframe
+    // WordPress automatically converts YouTube URLs to embeds
+    // This avoids HTML attribute encoding issues
+    const embedCode = `https://www.youtube.com/watch?v=${video.videoId}`;
 
     console.log(`Found video: ${video.title} by ${video.channelTitle}`);
 
@@ -126,10 +128,18 @@ export function embedVideoInContent(
 ): string {
   const insertPosition = findVideoInsertionPoint(content);
 
-  // Create markdown-friendly video section
+  // Sanitize video title for safe embedding
+  const safeTitle = videoTitle
+    .replace(/[<>"]/g, '') // Remove HTML characters
+    .replace(/&quot;/g, '')
+    .replace(/&#39;/g, '')
+    .trim();
+
+  // Create markdown-friendly video section with WordPress oEmbed URL
+  // WordPress automatically converts YouTube URLs to embeds
   const videoSection = `
 
-## 📺 Watch: ${videoTitle}
+## 📺 Watch: ${safeTitle}
 
 ${embedCode}
 

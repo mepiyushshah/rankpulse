@@ -69,8 +69,61 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Convert markdown content to HTML
+    // Convert markdown content to HTML with WordPress-safe options
+    marked.setOptions({
+      gfm: true, // GitHub Flavored Markdown
+      breaks: true, // Convert \n to <br>
+      headerIds: false, // Don't add IDs to headers
+      mangle: false, // Don't escape email addresses
+    });
+
     let htmlContent = await marked(article.content || '');
+
+    // Clean up the HTML for WordPress compatibility
+    // Remove any comments that might cause issues
+    htmlContent = htmlContent.replace(/<!--[\s\S]*?-->/g, '');
+
+    // Fix table structure: wrap in figure, add proper thead/tbody, and style cells
+    htmlContent = htmlContent.replace(
+      /<table>([\s\S]*?)<\/table>/gi,
+      (match, tableContent) => {
+        // Add modern, professional inline styles to cells
+        let styledContent = tableContent
+          .replace(/<th>/gi, '<th style="border-bottom: 2px solid #2563eb; padding: 14px 16px; background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); font-weight: 600; text-align: left; color: #fff !important; font-size: 15px; letter-spacing: 0.3px;">')
+          .replace(/<td>/gi, '<td style="border-bottom: 1px solid #e5e7eb; padding: 12px 16px; background-color: #fff; color: #1f2937 !important; font-size: 14px; line-height: 1.6;">');
+
+        // Check if table has thead/tbody already
+        if (styledContent.includes('<thead>')) {
+          // Already has proper structure, just wrap it
+          return `<figure class="wp-block-table" style="margin: 2em 0; overflow-x: auto;"><table class="has-fixed-layout" style="border-collapse: collapse; width: 100%; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">${styledContent}</table></figure>`;
+        }
+
+        // Split into rows
+        const rows = styledContent.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi);
+
+        if (!rows || rows.length === 0) {
+          return match; // Return original if can't parse
+        }
+
+        // First row with <th> tags is the header
+        const headerRow = rows.find(row => row.includes('<th'));
+        const bodyRows = rows.filter(row => row !== headerRow);
+
+        let restructured = '<table class="has-fixed-layout" style="border-collapse: collapse; width: 100%; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">';
+
+        if (headerRow) {
+          restructured += `<thead>${headerRow}</thead>`;
+        }
+
+        if (bodyRows.length > 0) {
+          restructured += `<tbody>${bodyRows.join('')}</tbody>`;
+        }
+
+        restructured += '</table>';
+
+        return `<figure class="wp-block-table" style="margin: 2em 0; overflow-x: auto;">${restructured}</figure>`;
+      }
+    );
 
     // Create WordPress client
     const wpClient = createWordPressClient(integration);
@@ -79,19 +132,40 @@ export async function POST(
     console.log('Processing images in content...');
     htmlContent = await wpClient.processContentImages(htmlContent);
 
-    // Prepare WordPress post data
-    const wpPost = {
+    // Debug: Log the content before sending
+    console.log('=== CONTENT TO WORDPRESS ===');
+    console.log('Length:', htmlContent.length);
+    console.log('First 200 chars:', htmlContent.substring(0, 200));
+    console.log('Last 200 chars:', htmlContent.substring(htmlContent.length - 200));
+    console.log('===========================');
+
+    // Prepare WordPress post data - be very defensive about what we send
+    const wpPost: any = {
       title: article.title,
       content: htmlContent,
       excerpt: article.meta_description || '',
       status: status,
-      slug: article.slug || undefined,
-      categories: categories || [],
-      tags: tags || [],
-      meta: article.schema_markup ? {
-        schema_markup: JSON.stringify(article.schema_markup)
-      } : undefined,
     };
+
+    // Only add optional fields if they have valid values
+    if (article.slug && typeof article.slug === 'string' && article.slug.trim()) {
+      wpPost.slug = article.slug;
+    }
+
+    if (categories && Array.isArray(categories) && categories.length > 0) {
+      wpPost.categories = categories;
+    }
+
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      wpPost.tags = tags;
+    }
+
+    // Skip meta/schema_markup for now - it might be causing the database error
+    // if (article.schema_markup) {
+    //   wpPost.meta = {
+    //     schema_markup: JSON.stringify(article.schema_markup)
+    //   };
+    // }
 
     // Check if article was already published (update instead of create)
     if (article.cms_post_id) {

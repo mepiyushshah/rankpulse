@@ -124,15 +124,112 @@ export class WordPressClient {
   }
 
   /**
+   * Aggressively clean content for WordPress compatibility
+   * Works with any WordPress database configuration (utf8 or utf8mb4)
+   */
+  private sanitizeContent(content: string): string {
+    let sanitized = content;
+
+    // Step 1: Decode ALL HTML entities using browser-like decoding
+    const textarea = { value: '' };
+    try {
+      // Simple regex-based entity decoder that handles all cases
+      sanitized = sanitized.replace(/&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-fA-F]{1,6});/gi, (match) => {
+        // Common entities
+        const entities: { [key: string]: string } = {
+          'quot': '"', 'apos': "'", 'amp': '&', 'lt': '<', 'gt': '>',
+          'nbsp': ' ', 'ndash': '-', 'mdash': '-', 'hellip': '...',
+          'lsquo': "'", 'rsquo': "'", 'ldquo': '"', 'rdquo': '"'
+        };
+
+        const name = match.slice(1, -1);
+        if (entities[name]) return entities[name];
+
+        // Numeric entities like &#39;
+        if (name[0] === '#') {
+          const code = name[1] === 'x'
+            ? parseInt(name.slice(2), 16)
+            : parseInt(name.slice(1), 10);
+
+          // Only decode basic ASCII range to avoid charset issues
+          if (code > 0 && code < 128) {
+            return String.fromCharCode(code);
+          }
+        }
+
+        // Leave it as-is if we can't decode safely
+        return match;
+      });
+    } catch (e) {
+      console.warn('Entity decoding failed, continuing with raw content');
+    }
+
+    // Step 2: Remove or replace ALL problematic characters
+    // Remove null bytes
+    sanitized = sanitized.replace(/\0/g, '');
+
+    // Remove control characters but preserve newlines, carriage returns, and tabs
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '');
+
+    // Replace smart quotes with straight quotes
+    sanitized = sanitized.replace(/[\u2018\u2019]/g, "'");
+    sanitized = sanitized.replace(/[\u201C\u201D]/g, '"');
+
+    // Replace dashes
+    sanitized = sanitized.replace(/[\u2013\u2014]/g, '-');
+
+    // Replace ellipsis
+    sanitized = sanitized.replace(/\u2026/g, '...');
+
+    // Remove zero-width characters
+    sanitized = sanitized.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+    // Step 3: For maximum compatibility, convert problematic non-ASCII to ASCII equivalents
+    // But PRESERVE HTML structure (tags, attributes, etc.)
+    // This regex preserves printable ASCII (0x20-0x7E) plus newlines, tabs
+    sanitized = sanitized.replace(/[^\x20-\x7E\n\r\t]/g, '');
+
+    // Step 4: Clean up any resulting double spaces or weird spacing
+    sanitized = sanitized.replace(/  +/g, ' ');
+
+    // Step 5: Size limit
+    const maxLength = 1024 * 1024; // 1MB
+    if (sanitized.length > maxLength) {
+      console.warn(`Content length (${sanitized.length}) exceeds safe limit. Truncating...`);
+      sanitized = sanitized.substring(0, maxLength);
+    }
+
+    // Debug: Check if we still have entities
+    const hasEntities = sanitized.match(/&#?\w+;/);
+    if (hasEntities) {
+      console.warn('Warning: Content still contains HTML entities after sanitization:', hasEntities.slice(0, 5));
+    }
+
+    console.log('Content sanitized for WordPress compatibility');
+    return sanitized;
+  }
+
+  /**
    * Create a new post on WordPress
    */
   async createPost(post: WordPressPost): Promise<WordPressResponse> {
     try {
       console.log(`Creating WordPress post: ${post.title}`);
 
+      // Sanitize content before sending
+      const sanitizedPost = {
+        ...post,
+        content: this.sanitizeContent(post.content),
+        title: post.title?.substring(0, 1000) || '', // WordPress title limit
+        excerpt: post.excerpt?.substring(0, 5000) || '', // Reasonable excerpt limit
+      };
+
+      // Log content size for debugging
+      console.log(`Content size: ${sanitizedPost.content.length} characters`);
+
       const result = await this.request('/posts', {
         method: 'POST',
-        body: JSON.stringify(post),
+        body: JSON.stringify(sanitizedPost),
       });
 
       if (result.success) {
@@ -156,9 +253,21 @@ export class WordPressClient {
     try {
       console.log(`Updating WordPress post: ${postId}`);
 
+      // Sanitize content if provided
+      const sanitizedPost: Partial<WordPressPost> = { ...post };
+      if (post.content) {
+        sanitizedPost.content = this.sanitizeContent(post.content);
+      }
+      if (post.title) {
+        sanitizedPost.title = post.title.substring(0, 1000);
+      }
+      if (post.excerpt) {
+        sanitizedPost.excerpt = post.excerpt.substring(0, 5000);
+      }
+
       const result = await this.request(`/posts/${postId}`, {
         method: 'POST',
-        body: JSON.stringify(post),
+        body: JSON.stringify(sanitizedPost),
       });
 
       if (result.success) {
