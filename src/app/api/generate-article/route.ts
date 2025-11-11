@@ -669,6 +669,21 @@ Return ONLY the meta description text, nothing else.`;
       }
     }
 
+    // Generate featured image URL
+    const featuredImageSettings = settingsData || {};
+    const primaryColor = featuredImageSettings.featured_image_primary_color || '#00AA45';
+    const style = featuredImageSettings.featured_image_style || 'solid_bold';
+    const textPosition = featuredImageSettings.featured_image_text_position || 'center';
+    const fontStyle = featuredImageSettings.featured_image_font_style || 'bold';
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+    const featuredImageUrl = `${baseUrl}/api/og-image?title=${encodeURIComponent(articleTitle)}&primaryColor=${encodeURIComponent(primaryColor)}&style=${style}&textPosition=${textPosition}&fontStyle=${fontStyle}`;
+
+    console.log('=== GENERATED FEATURED IMAGE URL ===');
+    console.log(featuredImageUrl);
+
     // Update article in database with all generated content
     const updateData: any = {
       title: articleTitle,
@@ -676,6 +691,7 @@ Return ONLY the meta description text, nothing else.`;
       slug: slug,
       status: 'draft',
       updated_at: new Date().toISOString(),
+      featured_image_url: featuredImageUrl,
     };
 
     // Add readability_score only if the column exists (optional)

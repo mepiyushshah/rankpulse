@@ -44,6 +44,7 @@ interface Article {
   slug?: string;
   meta_description?: string;
   published_url?: string;
+  featured_image_url?: string;
 }
 
 export default function ContentPlannerPage() {
@@ -117,7 +118,7 @@ export default function ContentPlannerPage() {
 
     const { data, error } = await supabase
       .from('articles')
-      .select('*')
+      .select('*, featured_image_url')
       .eq('project_id', projectId)
       .gte('scheduled_at', startDate.toISOString())
       .lte('scheduled_at', endDate.toISOString())
@@ -140,6 +141,9 @@ export default function ContentPlannerPage() {
         status: article.status || 'scheduled',
         slug: article.slug || '',
         meta_description: article.meta_description || '',
+        featured_image_url: article.featured_image_url || null,
+        published_url: article.published_url || null,
+        cms_post_id: article.cms_post_id || null,
       }));
       setArticles(mappedArticles);
     }
@@ -749,6 +753,28 @@ export default function ContentPlannerPage() {
           {/* Right Sidebar - Article Details */}
           <div className="w-80 flex-shrink-0">
             <div className="sticky top-6 space-y-4">
+              {/* Featured Image Card */}
+              {hasContent && selectedArticle.featured_image_url && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                      Featured Image
+                    </h3>
+                  </div>
+                  <div className="p-4">
+                    <img
+                      src={selectedArticle.featured_image_url}
+                      alt={selectedArticle.title || selectedArticle.target_keyword}
+                      className="w-full rounded-lg shadow-md"
+                      loading="lazy"
+                    />
+                    <p className="text-xs text-gray-500 mt-3">
+                      This image will be used when publishing to WordPress and social media.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Article Details Card */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">

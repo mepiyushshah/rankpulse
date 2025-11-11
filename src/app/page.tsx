@@ -58,12 +58,12 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white overflow-x-hidden">
       {/* Header Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+      <header className="fixed top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <a href="/" className="flex items-center">
-              <span className="text-xl font-semibold bg-gradient-to-r from-[#00D154] to-[#00AA45] bg-clip-text text-transparent" style={{
+              <span className="text-3xl font-semibold bg-gradient-to-r from-[#00D154] to-[#00AA45] bg-clip-text text-transparent" style={{
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
               }}>
                 RankPulse
@@ -71,20 +71,20 @@ export default function Home() {
             </a>
 
             {/* Navigation Links */}
-            <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm text-gray-700 hover:text-gray-900 transition-colors" style={{
+            <nav className="hidden md:flex items-center gap-10">
+              <a href="#features" className="text-lg text-gray-700 hover:text-gray-900 transition-colors" style={{
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
                 fontWeight: 500,
               }}>
                 Features
               </a>
-              <a href="#pricing" className="text-sm text-gray-700 hover:text-gray-900 transition-colors" style={{
+              <a href="#pricing" className="text-lg text-gray-700 hover:text-gray-900 transition-colors" style={{
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
                 fontWeight: 500,
               }}>
                 Pricing
               </a>
-              <a href="/auth/login" className="text-sm text-gray-700 hover:text-gray-900 transition-colors" style={{
+              <a href="/auth/login" className="text-lg text-gray-700 hover:text-gray-900 transition-colors" style={{
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
                 fontWeight: 500,
               }}>
@@ -92,7 +92,7 @@ export default function Home() {
               </a>
               <a
                 href="/auth/signup"
-                className="px-5 py-2 bg-gray-900 text-white rounded-full text-sm font-medium hover:bg-black transition-all"
+                className="px-7 py-3 bg-gray-900 text-white rounded-full text-lg font-medium hover:bg-black transition-all"
                 style={{
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
                   fontWeight: 500,

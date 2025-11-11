@@ -131,7 +131,6 @@ export async function POST(request: NextRequest) {
           featured_image_secondary_color: settings.featuredImageSecondaryColor,
           featured_image_font_style: settings.featuredImageFontStyle,
           featured_image_text_position: settings.featuredImageTextPosition,
-          featured_image_dimensions: settings.featuredImageDimensions,
           featured_image_include_logo: settings.featuredImageIncludeLogo,
         })
         .eq('project_id', projectId)
@@ -181,7 +180,6 @@ export async function POST(request: NextRequest) {
           featured_image_secondary_color: settings.featuredImageSecondaryColor,
           featured_image_font_style: settings.featuredImageFontStyle,
           featured_image_text_position: settings.featuredImageTextPosition,
-          featured_image_dimensions: settings.featuredImageDimensions,
           featured_image_include_logo: settings.featuredImageIncludeLogo,
         })
         .select()

@@ -28,6 +28,7 @@
     "@types/node": "^24.9.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "@vercel/og": "^0.8.5",
     "groq-sdk": "^0.34.0",
     "lucide-react": "^0.546.0",
     "marked": "^16.4.1",

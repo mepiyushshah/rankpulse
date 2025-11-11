@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -8,6 +8,7 @@ import { ArticleViewer } from './ArticleViewer';
 import PublishArticleDialog from './PublishArticleDialog';
 import { Loader2, Sparkles, Edit2, Save, X, Send, ExternalLink } from 'lucide-react';
 import { marked } from 'marked';
+import { supabase } from '@/lib/supabase';
 
 interface Article {
   id: string;
@@ -21,6 +22,7 @@ interface Article {
   status: string;
   published_url?: string;
   cms_post_id?: string;
+  featured_image_url?: string;
 }
 
 interface ArticleDetailModalProps {
@@ -45,11 +47,41 @@ export function ArticleDetailModal({
   const [editedTitle, setEditedTitle] = useState('');
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(article?.published_url || null);
+  const [freshArticle, setFreshArticle] = useState<Article | null>(article);
 
-  if (!article) return null;
+  // Refresh article data when modal opens to get latest featured_image_url
+  useEffect(() => {
+    const refreshArticle = async () => {
+      if (!article?.id) return;
 
-  const hasContent = article.content && article.content.trim().length > 0;
-  const scheduledDate = new Date(article.scheduled_at);
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*, featured_image_url')
+        .eq('id', article.id)
+        .single();
+
+      if (!error && data) {
+        setFreshArticle(data as Article);
+        console.log('Fresh article data loaded:', {
+          id: data.id,
+          title: data.title,
+          featured_image_url: data.featured_image_url,
+          hasFeaturedImage: !!data.featured_image_url
+        });
+      }
+    };
+
+    if (open) {
+      refreshArticle();
+    }
+  }, [open, article?.id]);
+
+  const displayArticle = freshArticle || article;
+
+  if (!displayArticle) return null;
+
+  const hasContent = displayArticle.content && displayArticle.content.trim().length > 0;
+  const scheduledDate = new Date(displayArticle.scheduled_at);
 
   const handleGenerateContent = async () => {
     if (!projectId || !article) return;
@@ -249,8 +281,10 @@ export function ArticleDetailModal({
           </div>
         </div>
 
-        {/* Content Area - Premium Article Style */}
-        <div className="px-4">
+        {/* Content Area - Premium Article Style with Sidebar */}
+        <div className="px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - Takes 2 columns */}
+          <div className="lg:col-span-2">
           {!hasContent ? (
             <div className="text-center py-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 shadow-inner">
               <div className="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -302,6 +336,29 @@ export function ArticleDetailModal({
             </div>
           ) : (
             <ArticleViewer title={article.title} content={article.content} />
+          )}
+          </div>
+
+          {/* Right Sidebar - Featured Image */}
+          {hasContent && displayArticle.featured_image_url && (
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm sticky top-4">
+                <div className="p-4 border-b border-gray-200 bg-gray-50">
+                  <h3 className="font-semibold text-gray-900">Featured Image</h3>
+                </div>
+                <div className="p-4">
+                  <img
+                    src={displayArticle.featured_image_url}
+                    alt={displayArticle.title || displayArticle.target_keyword}
+                    className="w-full rounded-lg shadow-md"
+                    loading="lazy"
+                  />
+                  <p className="text-xs text-gray-500 mt-3">
+                    This image will be used when publishing to WordPress and social media.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
