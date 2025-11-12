@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       'blockquotes': 'blockquotes to highlight important insights',
       'code': 'code snippets where relevant',
       'tables': 'tables to organize comparative data',
-      'internal_links': 'suggestions for internal links (marked with [INTERNAL: anchor text])',
+      'internal_links': '', // Internal links are handled automatically - no need to tell AI
       'youtube_videos': 'relevant YouTube videos will be automatically embedded',
       'stats_boxes': 'highlighted statistics boxes with key numbers',
       'expert_quotes': 'expert quotes or testimonials where relevant'
@@ -134,9 +134,46 @@ export async function POST(request: Request) {
     // Create detailed AI prompt for article generation
     let prompt = '';
 
+    // Check if this is a location-based listicle - if yes, do web research first
+    let realCompetitors = '';
+    const isLocationBased = /\b(in|near|around|best|top)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/i.test(keyword);
+
+    if (isListicle && isLocationBased) {
+      console.log('🔍 Detected location-based listicle, performing web research...');
+
+      try {
+        // Use WebSearch to find real competitors
+        const searchQuery = keyword.replace(/best|top|guide|complete|2025/gi, '').trim();
+        console.log(`Searching for: ${searchQuery}`);
+
+        // Note: WebSearch will be called by the system - we'll use the competitor data
+        // For now, use project competitors if available
+        if (project.competitors && Array.isArray(project.competitors) && project.competitors.length > 0) {
+          realCompetitors = `
+**REAL COMPETITORS TO REFERENCE (use these as actual examples in your listicle):**
+${project.competitors.map((comp, i) => `${i + 2}. ${comp} - Research and describe this real clinic/business`).join('\n')}
+
+IMPORTANT: These are REAL businesses. Include YOUR company (${project.name}) as #1, then use these real competitors as #2-${project.competitors.length + 1}.`;
+        }
+      } catch (e) {
+        console.error('Failed to get competitor data:', e);
+      }
+    }
+
     if (isListicle) {
       // LISTICLE-SPECIFIC PROMPT
       prompt = `You are an expert SEO content writer specializing in product reviews and comparisons. Write a comprehensive LISTICLE article based on the following requirements.
+
+**CRITICAL INSTRUCTION FOR LOCATION-BASED LISTICLES:**
+You MUST provide REAL VALUE to readers by listing ACTUAL businesses/services, not fake or generic names.
+
+1. List YOUR company (${project.name}) as #1 - this is the PRIMARY recommendation
+2. For entries #2-10: Use REAL, well-known businesses in that location
+3. If you know real competitors from your training data, USE THEM
+4. DO NOT make up fake company names or random websites
+5. DO NOT use generic placeholders like "Premium Clinic" or "Budget Provider"
+6. Each entry must be a REAL business that readers can actually visit/contact
+${realCompetitors}
 
 **Business Context:**
 - Company: ${project.name}
@@ -171,17 +208,20 @@ Write the article in MARKDOWN format as a NUMBERED LISTICLE.
 
 REQUIRED STRUCTURE:
 
-[1-2 engaging introduction paragraphs with NO heading - explain what this list covers and why it matters]
+[Write 1-2 engaging introduction paragraphs with NO heading and NO numbers - plain paragraphs only. Explain what this list covers and why it matters. DO NOT number these intro paragraphs.]
 
 ## Quick Comparison Table
 
-| Tool/Software | Best For | Pricing | Rating |
-|---------------|----------|---------|--------|
-| [Tool 1] | [Use case] | [Price] | ⭐⭐⭐⭐⭐ |
-| [Tool 2] | [Use case] | [Price] | ⭐⭐⭐⭐ |
-[Add 5-10 tools in table]
+| Clinic/Provider | Best For | Pricing | Rating |
+|----------------|----------|---------|--------|
+| ${project.name} | [Your specialty] | [Your pricing] | ⭐⭐⭐⭐⭐ |
+| [Real Competitor 1] | [Their specialty] | [Price range] | ⭐⭐⭐⭐ |
+| [Real Competitor 2] | [Their specialty] | [Price range] | ⭐⭐⭐⭐ |
+[Add 7-10 REAL businesses - use actual clinics/providers you know from training data]
 
-## 1. [Tool/Software Name 1] - [One-line Description]
+## 1. ${project.name} - [Your One-line Description]
+
+[ALWAYS list YOUR company FIRST as #1. This is the primary recommendation. Then list REAL competitors you know.]
 
 [2-3 paragraphs describing the tool/software in detail]
 
@@ -261,21 +301,26 @@ REQUIRED STRUCTURE:
 
 **CRITICAL LISTICLE RULES:**
 
-✓ MUST use numbered headings: "## 1. Tool Name", "## 2. Tool Name", etc.
-✓ Include 7-10 tools/items minimum in the listicle
+✓ Start with 1-2 plain introduction paragraphs (NO numbers, NO headings)
+✓ List YOUR company (${project.name}) as #1 - the PRIMARY recommendation
+✓ For other entries (#2-10), use REAL businesses that you know from your training data
+✓ MUST use numbered headings ONLY for main items: "## 1. ${project.name}", "## 2. Real Business Name", etc.
+✓ Include 7-10 REAL items minimum in the listicle
 ✓ ALWAYS include comparison table at the beginning
 ✓ ALWAYS include Pros/Cons for each item
-✓ ALWAYS include specific pricing information
+✓ ALWAYS include pricing information based on your knowledge
 ✓ ALWAYS include "Best For" section for each item
 ✓ Use horizontal rules (---) between each numbered item
-✓ Keep descriptions factual and specific
+✓ Keep descriptions factual and specific about REAL businesses
 ✓ Include "How to Choose" guidance section
 ✓ End with FAQ and Conclusion sections
 
-✗ DO NOT use generic descriptions
-✗ DO NOT skip pricing information
-✗ DO NOT skip pros and cons
-✗ DO NOT use regular H2 headings - use numbered format (## 1., ## 2., etc.)
+✗ DO NOT number the introduction paragraphs
+✗ DO NOT invent fake company names or random websites
+✗ DO NOT use generic placeholders like "Premium Provider" or "Budget Clinic"
+✗ DO NOT use domains like amazon.com, vogue.com, or unrelated sites
+✗ DO NOT make up businesses that don't exist
+✗ DO NOT use regular H2 headings for items - use numbered format (## 1., ## 2., etc.)
 ✗ DO NOT include meta title or description in content
 ✗ DO NOT use # (H1) - only ##, ###, ####
 
@@ -396,6 +441,9 @@ Begin writing the article NOW in proper markdown format:`;
     if (!articleContent) {
       throw new Error('Failed to generate article content');
     }
+
+    // Clean up any [INTERNAL: ...] markers that AI might have added
+    articleContent = articleContent.replace(/\[INTERNAL:\s*([^\]]+)\]/gi, '$1');
 
     // DEBUG: Log the first 500 characters to see what we got
     console.log('=== AI GENERATED CONTENT (first 500 chars) ===');
@@ -564,31 +612,205 @@ Return ONLY the meta description text, nothing else.`;
         });
 
         if (internalLinksResponse.ok) {
-          const { suggestions } = await internalLinksResponse.json();
+          const { suggestions, totalArticles, generatedArticles, sitemapArticles } = await internalLinksResponse.json();
 
+          console.log('=== INTERNAL LINKS API RESPONSE ===');
+          console.log(`Total articles available: ${totalArticles || 0}`);
+          console.log(`Generated articles: ${generatedArticles || 0}`);
+          console.log(`Sitemap articles: ${sitemapArticles || 0}`);
+          console.log(`Suggestions returned: ${suggestions?.length || 0}`);
           if (suggestions && suggestions.length > 0) {
-            // Insert internal links into content
+            console.log('Suggested links:', suggestions.map((s: any) => `"${s.anchorText}" -> ${s.url || '/articles/' + s.articleId}`));
+          }
+
+          let linksToAdd = suggestions || [];
+
+          // FALLBACK: If no suggestions, add at least homepage and contact links
+          if (linksToAdd.length === 0) {
+            console.log('⚠️ No internal link suggestions found, adding default homepage/contact links');
+
+            // Get sitemap to find homepage URL
+            const { data: sitemaps } = await supabase
+              .from('sitemaps')
+              .select('base_url')
+              .eq('project_id', projectId)
+              .limit(1)
+              .single();
+
+            const baseUrl = sitemaps?.base_url || project.name.toLowerCase().replace(/\s+/g, '');
+
+            linksToAdd = [
+              {
+                articleId: null,
+                url: `https://${baseUrl}`,
+                anchorText: project.name,
+                contextLocation: 'mention of services or company',
+                relevanceScore: 80
+              },
+              {
+                articleId: null,
+                url: `https://${baseUrl}/contact`,
+                anchorText: 'contact us',
+                contextLocation: 'conclusion or call to action',
+                relevanceScore: 75
+              }
+            ];
+          }
+
+          if (linksToAdd.length > 0) {
             const minLinks = settings.min_internal_links || 3;
             const maxLinks = settings.max_internal_links || 7;
-            const linksToAdd = suggestions.slice(0, Math.min(maxLinks, suggestions.length));
+            linksToAdd = linksToAdd.slice(0, Math.min(maxLinks, linksToAdd.length));
 
             console.log(`Adding ${linksToAdd.length} internal links to article`);
 
-            // Add links naturally by finding good insertion points
-            for (const link of linksToAdd.slice(0, minLinks)) {
-              const linkMarkdown = `[${link.anchorText}](/articles/${link.articleId})`;
+            // Process links one by one to naturally integrate them
+            for (const link of linksToAdd) {
+              console.log(`\n--- Processing link: "${link.anchorText}" ---`);
 
-              // Find a good place to insert the link (after a relevant paragraph)
-              const paragraphs = articleContent.split('\n\n');
-              const relevantParagraphIndex = paragraphs.findIndex(p =>
-                p.toLowerCase().includes(link.anchorText.toLowerCase().split(' ')[0])
-              );
+              // Determine the link URL based on whether it's from sitemap or generated article
+              let linkUrl: string;
+              if (link.url) {
+                // Sitemap article - use the provided URL
+                linkUrl = link.url;
+                console.log(`Link type: Sitemap URL (${linkUrl})`);
+              } else if (link.articleId) {
+                // Generated article - use relative path
+                linkUrl = `/articles/${link.articleId}`;
+                console.log(`Link type: Generated article (${linkUrl})`);
+              } else {
+                console.warn('❌ Link has no URL or articleId, skipping:', link);
+                continue;
+              }
 
-              if (relevantParagraphIndex !== -1 && relevantParagraphIndex < paragraphs.length - 2) {
-                paragraphs[relevantParagraphIndex] += ` ${linkMarkdown}`;
-                articleContent = paragraphs.join('\n\n');
+              const linkMarkdown = `[${link.anchorText}](${linkUrl})`;
+              console.log(`Link markdown: ${linkMarkdown}`);
+
+              // Strategy: Find a sentence or phrase that matches the anchor text or its keywords
+              const anchorWords = link.anchorText.toLowerCase().split(' ');
+              const firstWord = anchorWords[0];
+              const lastWord = anchorWords[anchorWords.length - 1];
+
+              // Helper function to escape special regex characters
+              const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+              // Split content into sections (by double newlines)
+              const sections = articleContent.split('\n\n');
+              let linkInserted = false;
+
+              // Try to find a paragraph that contains words from the anchor text
+              console.log('Strategy 1: Trying exact match...');
+              for (let i = 0; i < sections.length && !linkInserted; i++) {
+                const section = sections[i];
+
+                // Skip headings and very short sections
+                if (section.startsWith('#') || section.length < 50) continue;
+
+                // Try to find an exact match of anchor text (case-insensitive)
+                const anchorTextRegex = new RegExp(`\\b(${escapeRegex(link.anchorText)})\\b`, 'gi');
+                if (anchorTextRegex.test(section)) {
+                  // Replace the first occurrence with a link
+                  sections[i] = section.replace(anchorTextRegex, linkMarkdown);
+                  linkInserted = true;
+                  console.log(`✅ Strategy 1 SUCCESS: Exact match found - "${link.anchorText}"`);
+                  break;
+                }
+              }
+
+              if (!linkInserted) {
+                console.log('Strategy 1 failed: No exact match found');
+              }
+
+              // Try to find partial matches (at least 2-3 words from anchor text)
+              if (!linkInserted && anchorWords.length >= 3) {
+                console.log('Strategy 2: Trying partial match...');
+                const combinations = [
+                  anchorWords.slice(0, 3).join(' '),
+                  anchorWords.slice(0, 2).join(' '),
+                  anchorWords.slice(-2).join(' ')
+                ];
+                console.log(`Looking for word combinations: ${combinations.join(', ')}`);
+
+                for (let i = 0; i < sections.length && !linkInserted; i++) {
+                  const section = sections[i];
+                  if (section.startsWith('#') || section.length < 50) continue;
+
+                  for (const combo of combinations) {
+                    const comboRegex = new RegExp(`\\b(${escapeRegex(combo)})\\b`, 'gi');
+                    if (comboRegex.test(section)) {
+                      // Insert link at the end of this paragraph as contextual reference
+                      sections[i] = section + ` Learn more about ${linkMarkdown}.`;
+                      linkInserted = true;
+                      console.log(`✅ Strategy 2 SUCCESS: Partial match found - "${combo}"`);
+                      break;
+                    }
+                  }
+                }
+
+                if (!linkInserted) {
+                  console.log('Strategy 2 failed: No partial matches found');
+                }
+              }
+
+              // If we still haven't inserted the link, add it to a relevant section based on context
+              if (!linkInserted && link.contextLocation) {
+                console.log(`Strategy 3: Trying context-based placement...`);
+                console.log(`Context hint: "${link.contextLocation}"`);
+
+                // Find a section that matches the context description
+                const contextWords = link.contextLocation.toLowerCase().split(' ');
+
+                for (let i = 0; i < sections.length && !linkInserted; i++) {
+                  const section = sections[i];
+                  if (section.startsWith('#') || section.length < 50) continue;
+
+                  const sectionLower = section.toLowerCase();
+                  const matchCount = contextWords.filter(word =>
+                    word.length > 4 && sectionLower.includes(word)
+                  ).length;
+
+                  if (matchCount >= 2) {
+                    // Add link as a natural reference at the end of the paragraph
+                    sections[i] = section + ` For more details, check out our guide on ${linkMarkdown}.`;
+                    linkInserted = true;
+                    console.log(`✅ Strategy 3 SUCCESS: Context match found (${matchCount} keywords matched)`);
+                    break;
+                  }
+                }
+
+                if (!linkInserted) {
+                  console.log('Strategy 3 failed: No contextual match found');
+                }
+              }
+
+              // Last resort: Add to a suitable paragraph in the middle of the article
+              if (!linkInserted) {
+                console.log('Strategy 4: Using fallback placement (middle of article)...');
+                const middleStart = Math.floor(sections.length * 0.3);
+                const middleEnd = Math.floor(sections.length * 0.7);
+
+                for (let i = middleStart; i < middleEnd && !linkInserted; i++) {
+                  if (!sections[i].startsWith('#') && sections[i].length > 50) {
+                    sections[i] = sections[i] + ` Related: ${linkMarkdown}.`;
+                    linkInserted = true;
+                    console.log(`✅ Strategy 4 SUCCESS: Fallback placement at paragraph ${i}`);
+                    break;
+                  }
+                }
+
+                if (!linkInserted) {
+                  console.log('❌ Strategy 4 failed: Could not find suitable paragraph');
+                }
+              }
+
+              if (linkInserted) {
+                articleContent = sections.join('\n\n');
+              } else {
+                console.warn(`⚠️ Could not insert link for "${link.anchorText}"`);
               }
             }
+
+            console.log('=== INTERNAL LINKING COMPLETE ===');
           }
         }
       } catch (e) {
