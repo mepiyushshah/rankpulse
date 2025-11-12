@@ -235,7 +235,7 @@ async function parseSitemap(sitemapId: string, projectId: string, sitemapUrl: st
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch sitemap: ${response.status} ${response.statusTimeout}`);
+      throw new Error(`Failed to fetch sitemap: ${response.status} ${response.statusText}`);
     }
 
     const xmlText = await response.text();
