@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Settings, Sparkles, Target, Calendar, Zap, ChevronRight, Save, RotateCcw, Image } from 'lucide-react'
+import { Settings, Sparkles, Target, Calendar, Zap, ChevronRight, Save, RotateCcw, Image, Link2 } from 'lucide-react'
+import SitemapSettings from '@/components/settings/SitemapSettings'
 
 export default function ArticlesSettingsPage() {
   const [activeTab, setActiveTab] = useState('content')
@@ -74,6 +75,7 @@ export default function ArticlesSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [isLoading, setIsLoading] = useState(true)
+  const [projectId, setProjectId] = useState<string | null>(null)
 
   // Load settings on mount
   useEffect(() => {
@@ -92,6 +94,7 @@ export default function ArticlesSettingsPage() {
         if (!projects || projects.length === 0) return
 
         const projectId = projects[0].id
+        setProjectId(projectId)
 
         // Fetch saved settings
         const response = await fetch(`/api/article-settings?projectId=${projectId}`)
@@ -165,6 +168,7 @@ export default function ArticlesSettingsPage() {
   const tabs = [
     { id: 'content', label: 'Content & AI', icon: Sparkles },
     { id: 'seo', label: 'SEO & Optimization', icon: Target },
+    { id: 'sitemap', label: 'Sitemap & Links', icon: Link2 },
     { id: 'automation', label: 'Automation', icon: Zap },
     { id: 'structure', label: 'Structure', icon: Settings },
     { id: 'featured_images', label: 'Featured Images', icon: Image },
@@ -439,6 +443,13 @@ export default function ArticlesSettingsPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Sitemap & Links Tab */}
+        {activeTab === 'sitemap' && projectId && (
+          <div className="space-y-4">
+            <SitemapSettings projectId={projectId} />
           </div>
         )}
 

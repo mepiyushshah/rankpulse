@@ -39,7 +39,40 @@ export async function POST(request: Request) {
       .in('status', ['published', 'draft'])
       .limit(50);
 
-    if (!articles || articles.length === 0) {
+    // Also get sitemap articles for internal linking
+    const { data: sitemapArticles } = await supabase
+      .from('sitemap_articles')
+      .select('id, url, title')
+      .eq('project_id', projectId)
+      .order('priority', { ascending: false, nullsFirst: false })
+      .limit(100);
+
+    // Combine both sources
+    const allArticles = [];
+
+    // Add database articles
+    if (articles && articles.length > 0) {
+      allArticles.push(...articles.map(a => ({
+        title: a.title,
+        keyword: a.keyword,
+        id: a.id,
+        type: 'internal',
+        url: null
+      })));
+    }
+
+    // Add sitemap articles
+    if (sitemapArticles && sitemapArticles.length > 0) {
+      allArticles.push(...sitemapArticles.map(a => ({
+        title: a.title,
+        keyword: null,
+        id: a.id,
+        type: 'sitemap',
+        url: a.url
+      })));
+    }
+
+    if (allArticles.length === 0) {
       return NextResponse.json({
         success: true,
         suggestions: [],
@@ -48,19 +81,20 @@ export async function POST(request: Request) {
     }
 
     // Build a list of available articles for the AI
-    const availableArticles = articles.map(a => ({
-      title: a.title,
-      keyword: a.keyword,
-      id: a.id
-    }));
+    const availableArticles = allArticles.map(a => {
+      if (a.type === 'sitemap') {
+        return `- "${a.title}" (url: ${a.url}, id: ${a.id}, source: existing-site)`;
+      }
+      return `- "${a.title}" (keyword: ${a.keyword}, id: ${a.id}, source: generated)`;
+    }).join('\n');
 
     const linkPrompt = `You are an SEO expert. Analyze this article content and suggest ${settings.min_internal_links}-${settings.max_internal_links} internal links to related articles.
 
 Current Article Content:
 ${content.substring(0, 3000)}
 
-Available Articles to Link To:
-${availableArticles.map(a => `- "${a.title}" (keyword: ${a.keyword}, id: ${a.id})`).join('\n')}
+Available Articles to Link To (from both generated content and existing website):
+${availableArticles}
 
 Provide a JSON response with suggested internal links:
 {
@@ -70,7 +104,8 @@ Provide a JSON response with suggested internal links:
       "articleTitle": "Article Title",
       "anchorText": "suggested anchor text",
       "contextLocation": "where in the content this link would fit",
-      "relevanceScore": 85
+      "relevanceScore": 85,
+      "url": "full-url-if-from-sitemap-or-null"
     }
   ]
 }
@@ -78,7 +113,9 @@ Provide a JSON response with suggested internal links:
 Rules:
 - Only suggest ${settings.min_internal_links}-${settings.max_internal_links} links
 - Links must be highly relevant to the content
+- Prefer linking to existing website articles (source: existing-site) when relevant for better SEO
 - Anchor text should be natural and contextual
+- Include the full URL if the source is "existing-site", otherwise set url to null
 - Sort by relevance score (highest first)
 
 Return ONLY the JSON, no other text.`;
@@ -101,7 +138,9 @@ Return ONLY the JSON, no other text.`;
     return NextResponse.json({
       success: true,
       suggestions,
-      totalArticles: articles.length,
+      totalArticles: allArticles.length,
+      generatedArticles: articles?.length || 0,
+      sitemapArticles: sitemapArticles?.length || 0,
     });
   } catch (error: any) {
     console.error('Error generating internal links:', error);
