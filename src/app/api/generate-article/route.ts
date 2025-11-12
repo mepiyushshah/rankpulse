@@ -765,7 +765,7 @@ Return ONLY the meta description text, nothing else.`;
                   if (section.startsWith('#') || section.length < 50) continue;
 
                   const sectionLower = section.toLowerCase();
-                  const matchCount = contextWords.filter(word =>
+                  const matchCount = contextWords.filter((word: string) =>
                     word.length > 4 && sectionLower.includes(word)
                   ).length;
 
