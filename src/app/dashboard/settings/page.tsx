@@ -36,10 +36,23 @@ export default function SettingsPage() {
   const [generatingCompetitors, setGeneratingCompetitors] = useState(false);
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [initialWebsiteUrl, setInitialWebsiteUrl] = useState('');
 
   useEffect(() => {
     loadProject();
   }, []);
+
+  // Clear audience & competitors when website URL changes
+  useEffect(() => {
+    if (initialWebsiteUrl && formData.websiteUrl !== initialWebsiteUrl) {
+      setAudienceData({
+        targetAudiences: [],
+        newAudience: '',
+        competitors: [],
+        newCompetitor: '',
+      });
+    }
+  }, [formData.websiteUrl, initialWebsiteUrl]);
 
   const loadProject = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -60,6 +73,8 @@ export default function SettingsPage() {
         language: data.language || 'en',
         description: data.description || '',
       });
+      // Store the initial website URL to detect changes
+      setInitialWebsiteUrl(data.website_url || '');
 
       if (data.target_audiences || data.competitors) {
         setAudienceData({
@@ -79,18 +94,34 @@ export default function SettingsPage() {
     setSaveStatus('idle');
 
     try {
+      // Check if website URL has changed
+      const websiteUrlChanged = formData.websiteUrl !== initialWebsiteUrl;
+
+      const updateData: any = {
+        name: formData.name,
+        website_url: formData.websiteUrl,
+        country: formData.country,
+        language: formData.language,
+        description: formData.description,
+      };
+
+      // If website URL changed, clear audiences and competitors in DB
+      if (websiteUrlChanged) {
+        updateData.target_audiences = [];
+        updateData.competitors = [];
+      }
+
       const { error } = await supabase
         .from('projects')
-        .update({
-          name: formData.name,
-          website_url: formData.websiteUrl,
-          country: formData.country,
-          language: formData.language,
-          description: formData.description,
-        })
+        .update(updateData)
         .eq('id', project.id);
 
       if (error) throw error;
+
+      // Update the initial website URL to the new one
+      if (websiteUrlChanged) {
+        setInitialWebsiteUrl(formData.websiteUrl);
+      }
 
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);

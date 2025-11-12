@@ -65,6 +65,7 @@ export default function ContentPlannerPage() {
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [isSavingMeta, setIsSavingMeta] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [generatingArticleId, setGeneratingArticleId] = useState<string | null>(null);
 
   // Load project and articles on mount and when month changes
   useEffect(() => {
@@ -417,6 +418,38 @@ export default function ContentPlannerPage() {
       alert(error.message || 'Failed to generate article');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Handle generate from calendar view
+  const handleGenerateFromCalendar = async (article: Article, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent opening article detail
+
+    setGeneratingArticleId(article.id);
+    try {
+      const response = await fetch('/api/generate-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          articleId: article.id,
+          keyword: article.target_keyword,
+          contentType: article.content_type,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate article');
+      }
+
+      const data = await response.json();
+      alert('Article generated successfully!');
+      await loadArticles(); // Reload the article data
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate article');
+    } finally {
+      setGeneratingArticleId(null);
     }
   };
 
@@ -995,6 +1028,8 @@ export default function ContentPlannerPage() {
             key={index}
             day={day}
             onArticleClick={handleArticleClick}
+            onGenerateClick={handleGenerateFromCalendar}
+            generatingArticleId={generatingArticleId}
             articles={articles.filter((article) => {
               const articleDate = new Date(article.scheduled_at);
               return (
@@ -1030,11 +1065,15 @@ export default function ContentPlannerPage() {
 function CalendarDayCell({
   day,
   articles,
-  onArticleClick
+  onArticleClick,
+  onGenerateClick,
+  generatingArticleId
 }: {
   day: CalendarDay;
   articles: Article[];
   onArticleClick: (article: Article) => void;
+  onGenerateClick: (article: Article, event: React.MouseEvent) => void;
+  generatingArticleId: string | null;
 }) {
   const dayNumber = day.date.getDate();
   const dayName = day.date.toLocaleDateString('en-US', { weekday: 'short' });
@@ -1080,47 +1119,73 @@ function CalendarDayCell({
       {/* Content Area */}
       <div className="space-y-2">
         {articles.length > 0 ? (
-          articles.map((article) => (
-            <div
-              key={article.id}
-              onClick={() => onArticleClick(article)}
-              className={`${getDifficultyColor(article.keyword_difficulty)} border rounded-md p-2 cursor-pointer hover:shadow-md transition-shadow`}
-            >
-              {/* Keyword */}
-              <p className="text-xs font-bold text-gray-900 break-words">
-                {article.target_keyword}
-              </p>
+          articles.map((article) => {
+            const hasContent = article.content && article.content.trim().length > 0;
+            const isGenerating = generatingArticleId === article.id;
 
-              {/* Volume and Difficulty */}
-              <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-600">
-                <span className="font-medium">Vol: {article.search_volume >= 1000 ? `${(article.search_volume / 1000).toFixed(1)}K` : article.search_volume}</span>
-                <span>•</span>
-                <span className="font-medium">Diff: {article.keyword_difficulty}</span>
-              </div>
+            return (
+              <div
+                key={article.id}
+                onClick={() => hasContent && onArticleClick(article)}
+                className={`${getDifficultyColor(article.keyword_difficulty)} border rounded-md p-2 ${hasContent ? 'cursor-pointer hover:shadow-md' : 'cursor-default'} transition-shadow`}
+              >
+                {/* Keyword */}
+                <p className="text-xs font-bold text-gray-900 break-words">
+                  {article.target_keyword}
+                </p>
 
-              {/* Content Type and Status */}
-              <div className="flex items-center justify-between gap-1 mt-1">
-                <span className="text-[10px] text-gray-500">
-                  {getContentTypeEmoji(article.content_type)} {article.content_type}
-                </span>
-                {article.status === 'published' && (
-                  <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
-                    ✓ Published
+                {/* Volume and Difficulty */}
+                <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-600">
+                  <span className="font-medium">Vol: {article.search_volume >= 1000 ? `${(article.search_volume / 1000).toFixed(1)}K` : article.search_volume}</span>
+                  <span>•</span>
+                  <span className="font-medium">Diff: {article.keyword_difficulty}</span>
+                </div>
+
+                {/* Content Type and Status */}
+                <div className="flex items-center justify-between gap-1 mt-1">
+                  <span className="text-[10px] text-gray-500">
+                    {getContentTypeEmoji(article.content_type)} {article.content_type}
                   </span>
-                )}
-                {article.status === 'scheduled' && (
-                  <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
-                    📅 Scheduled
-                  </span>
-                )}
-                {article.status === 'draft' && (
-                  <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    📝 Draft
-                  </span>
+                  {article.status === 'published' && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                      ✓ Published
+                    </span>
+                  )}
+                  {article.status === 'scheduled' && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                      📅 Scheduled
+                    </span>
+                  )}
+                  {article.status === 'draft' && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded">
+                      📝 Draft
+                    </span>
+                  )}
+                </div>
+
+                {/* Generate Button - Show only for articles without content */}
+                {!hasContent && article.status === 'scheduled' && (
+                  <button
+                    onClick={(e) => onGenerateClick(article, e)}
+                    disabled={isGenerating}
+                    className="w-full mt-2 px-2 py-1 text-[10px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded flex items-center justify-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3" />
+                        Generate
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           isCurrentMonth && (
             <p className="text-xs text-gray-400 italic">No article scheduled</p>
