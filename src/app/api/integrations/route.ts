@@ -8,7 +8,13 @@ export async function GET(request: NextRequest) {
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
+    console.log('GET /api/integrations - Auth check:', {
+      user: user?.id,
+      authError: authError?.message
+    });
+
     if (authError || !user) {
+      console.error('GET /api/integrations - Unauthorized:', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -46,7 +52,13 @@ export async function POST(request: NextRequest) {
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
+    console.log('POST /api/integrations - Auth check:', {
+      user: user?.id,
+      authError: authError?.message
+    });
+
     if (authError || !user) {
+      console.error('POST /api/integrations - Unauthorized:', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

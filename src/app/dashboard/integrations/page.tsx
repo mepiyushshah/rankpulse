@@ -57,33 +57,20 @@ export default function IntegrationsPage() {
   }, [projectId]);
 
   const loadProject = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: projectsData, error } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-
-    if (projectsData) {
-      setProjectId(projectsData.id);
-    } else if (error?.code === 'PGRST116') {
-      // No project found - create a default one
-      const { data: newProject } = await supabase
-        .from('projects')
-        .insert({
-          user_id: user.id,
-          name: 'My Project',
-          description: 'Default project',
-        })
-        .select('id')
-        .single();
-
-      if (newProject) {
-        setProjectId(newProject.id);
+    try {
+      // Fetch project from API instead of using client-side Supabase
+      const response = await fetch('/api/projects');
+      if (!response.ok) {
+        console.error('Failed to fetch project');
+        return;
       }
+
+      const data = await response.json();
+      if (data.project) {
+        setProjectId(data.project.id);
+      }
+    } catch (error) {
+      console.error('Error loading project:', error);
     }
   };
 
