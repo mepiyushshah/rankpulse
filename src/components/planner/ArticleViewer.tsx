@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { marked } from 'marked';
+import { toCapitalizedCase } from '@/lib/text-utils';
 
 interface ArticleViewerProps {
   title?: string;
@@ -28,7 +29,7 @@ export function ArticleViewer({ title, content }: ArticleViewerProps) {
       {/* Article Content */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <article className="article-content px-8 py-10 md:px-12 md:py-12">
-          {title && <h1 className="article-title">{title}</h1>}
+          {title && <h1 className="article-title">{toCapitalizedCase(title)}</h1>}
           <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
         </article>
       </div>

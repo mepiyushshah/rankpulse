@@ -1,159 +1,97 @@
-# 🚀 Quick Start - Article Settings Feature
+# ⚡ Quick Start Guide - 5 Minutes Setup
 
-## ✅ Status: 100% FUNCTIONAL!
-
-All features in `/dashboard/articles/settings` are now fully operational and integrated with article generation.
+Follow these steps in order. The detailed guide is in `DEPLOYMENT_GUIDE.md`.
 
 ---
 
-## 🏃 Quick Setup (3 Steps)
+## 1️⃣ Database Migration (2 mins)
 
-### 1️⃣ Run Database Migrations
+1. Open https://supabase.com/dashboard
+2. Click your project
+3. Go to **SQL Editor** → **New Query**
+4. Copy-paste contents of `supabase-migration-used-images.sql`
+5. Click **Run**
 
-Open Supabase SQL Editor and run these files:
+✅ Done!
 
-```sql
--- First (if not already done):
--- supabase-migration-article-settings.sql
+---
 
--- Then run this NEW one:
--- supabase-migration-articles-enhancement.sql
-```
-
-### 2️⃣ Add Environment Variables
-
-Add to your `.env.local`:
-
-```env
-CRON_SECRET=make_this_something_random_123456
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### 3️⃣ Restart Server
+## 2️⃣ Test Locally (Optional - 1 min)
 
 ```bash
-# If server is running, restart it:
+# Make sure dev server is running
 npm run dev
+
+# In another terminal, run:
+./test-cron-local.sh
 ```
 
-**That's it!** 🎉
+You should see `✅ Success!` if everything works.
 
 ---
 
-## 🧪 Test It Now
+## 3️⃣ Deploy to Vercel (2 mins)
 
-1. **Go to**: http://localhost:3000/dashboard/articles/settings
-
-2. **Change some settings**:
-   - Brand Voice → Casual
-   - Word Count → 2500-3500
-   - Temperature → 0.8 (more creative)
-   - Enable YouTube Videos
-
-3. **Click "Save Settings"**
-
-4. **Refresh the page** - Your settings should still be there! ✅
-
-5. **Generate an article** - It will use your settings! ✅
-
----
-
-## 📊 What's Working (Everything!)
-
-| Feature Category | Status |
-|-----------------|--------|
-| **Settings Load/Save** | ✅ Working |
-| **Content & AI** | ✅ All options used in generation |
-| **SEO & Optimization** | ✅ Meta, schema, internal links |
-| **Article Structure** | ✅ Sections, elements, media |
-| **Automation** | ✅ Cron-ready (needs Vercel deploy) |
-| **Quality Control** | ✅ Grammar, readability, auto-fix |
-
----
-
-## 🎯 Key Files Changed
-
-```
-✅ Modified:
-- src/app/dashboard/articles/settings/page.tsx
-- src/app/api/generate-article/route.ts
-
-✅ Created:
-- src/app/api/quality-check/route.ts
-- src/app/api/internal-links/route.ts
-- src/app/api/cron/auto-generate-articles/route.ts
-- supabase-migration-articles-enhancement.sql
-- vercel.json
-
-✅ Documentation:
-- ARTICLE_SETTINGS_SETUP.md (detailed guide)
-- IMPLEMENTATION_SUMMARY.md (technical details)
-- QUICK_START.md (this file)
-```
-
----
-
-## ⚠️ **Important Note About Automation**
-
-The **automated article generation** feature (cron job) requires a **Vercel Pro plan** or higher.
-
-- ✅ **All other features work on free plan** (settings, generation, quality checks, SEO)
-- ❌ **Automation/scheduling requires paid Vercel plan**
-
-**To enable automation:**
-1. Upgrade to Vercel Pro
-2. Rename `vercel.json.example` to `vercel.json`
-3. Deploy to Vercel
-
-You can still use **all other features** without automation!
-
----
-
-## 🔥 Before vs After
-
-### Before
-```typescript
-// Hardcoded, ignored user settings
-temperature: 0.7
-wordCount: "1500-2500"
-tone: "professional"
-```
-
-### After
-```typescript
-// Uses YOUR settings from database
-temperature: settings.temperature  // You control this!
-wordCount: `${settings.min_word_count}-${settings.max_word_count}`
-tone: settings.tone_attributes.join(', ')
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Settings Not Showing After Refresh?
 ```bash
-# Clear Next.js cache
-rm -rf .next
-npm run dev
+# Commit and push
+git add .
+git commit -m "Add automated article generation"
+git push origin main
 ```
 
-### Article Not Using Settings?
-- Check browser console for errors
-- Verify migrations ran successfully
-- Check Supabase logs
+Vercel will auto-deploy (if connected).
 
-### Need More Help?
-See detailed docs:
-- `ARTICLE_SETTINGS_SETUP.md` - Complete setup guide
-- `IMPLEMENTATION_SUMMARY.md` - Technical details
+**First time?** Go to https://vercel.com/new and import your GitHub repo.
 
 ---
 
-## 🎉 You're Done!
+## 4️⃣ Add Environment Variable (1 min)
 
-Your Article Settings feature is now **100% functional**. Every setting you configure will be used when generating articles.
+1. Go to Vercel Dashboard → Your Project → **Settings** → **Environment Variables**
+2. Add:
+   - **Name**: `CRON_SECRET`
+   - **Value**: `hJ7VNykNg2ZubzBnNfzFsvRlDbcH+j/i5OvGydqD8oc=`
+   - **Environment**: Production, Preview, Development (all 3)
+3. Click **Save**
+4. Go to **Deployments** → Click **...** on latest → **Redeploy**
 
-**No more fake UI. Everything works!** 💪
+---
 
-Visit: http://localhost:3000/dashboard/articles/settings
+## 5️⃣ Enable Automation (1 min)
+
+1. Open your app (production URL)
+2. Go to **Article Settings**
+3. Toggle **"Enable Auto-Generation"** → **ON**
+4. Set **"Publish Time"** (e.g., 09:00 AM)
+5. Click **"Save Settings"**
+
+---
+
+## 🎉 That's It!
+
+**Test it:**
+1. Go to Articles Planner
+2. Add a keyword to **tomorrow's date**
+3. Wait 30 minutes (or check Vercel Logs)
+4. Article should be generated automatically!
+
+---
+
+## 📚 Need More Info?
+
+- **Detailed Setup**: See `DEPLOYMENT_GUIDE.md`
+- **How It Works**: See `AUTOMATION_SETUP.md`
+- **Troubleshooting**: Check Vercel Logs → Filter by "cron"
+
+---
+
+## 🐛 Quick Troubleshooting
+
+**Cron not running?**
+→ Check `CRON_SECRET` is in Vercel environment variables
+
+**Articles not generating?**
+→ Make sure articles are scheduled for **tomorrow** (not today!)
+
+**Need help?**
+→ Check Vercel Logs for error messages

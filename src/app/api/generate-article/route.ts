@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase-server';
 import Groq from 'groq-sdk';
 import { getToolScreenshot, extractToolNames } from '@/lib/screenshot-service';
 import { findRelevantVideo, embedVideoInContent } from '@/lib/youtube-service';
+import { toCapitalizedCase } from '@/lib/text-utils';
+import { addImagesToArticle } from '@/lib/pixabay-service';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -544,6 +546,9 @@ Create ONE LONG, descriptive title NOW (50-60 characters):`;
       }
     }
 
+    // Convert title to Capitalized Case
+    articleTitle = toCapitalizedCase(articleTitle);
+
     console.log(`=== GENERATED TITLE (${articleTitle.length} chars) ===`, articleTitle);
 
     // Generate meta description if enabled
@@ -860,6 +865,40 @@ Return ONLY the meta description text, nothing else.`;
       } catch (e) {
         console.error('Failed to add YouTube video:', e);
       }
+    }
+
+    // Add relevant images from Pixabay
+    try {
+      console.log('=== ADDING IMAGES TO ARTICLE ===');
+
+      // Get all previously used images for this project
+      const { data: usedImagesData } = await supabase
+        .from('used_images')
+        .select('image_url')
+        .eq('project_id', projectId);
+
+      const usedImageUrls = new Set(
+        (usedImagesData || []).map((img: any) => img.image_url)
+      );
+
+      console.log(`📊 Previously used images in project: ${usedImageUrls.size}`);
+
+      // Add images to article content
+      const imageResult = await addImagesToArticle(
+        articleContent,
+        keyword,
+        projectId,
+        articleId,
+        usedImageUrls,
+        supabase
+      );
+
+      articleContent = imageResult.content;
+
+      console.log(`=== IMAGES ADDED: ${imageResult.imagesAdded} ===`);
+    } catch (e) {
+      console.error('Failed to add images:', e);
+      // Continue even if image addition fails
     }
 
     // Run quality check if grammar check is enabled

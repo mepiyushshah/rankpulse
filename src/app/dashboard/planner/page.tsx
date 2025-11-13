@@ -1168,7 +1168,7 @@ function CalendarDayCell({
                   <button
                     onClick={(e) => onGenerateClick(article, e)}
                     disabled={isGenerating}
-                    className="w-full mt-2 px-2 py-1 text-[10px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded flex items-center justify-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full mt-2 px-2 py-1 text-[10px] font-semibold bg-[#00AA45] hover:bg-[#008837] text-white rounded flex items-center justify-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isGenerating ? (
                       <>
