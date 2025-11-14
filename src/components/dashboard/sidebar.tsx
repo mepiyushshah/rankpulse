@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { Project } from '@/lib/supabase';
 import {
   Settings,
   FileText,
@@ -47,6 +49,26 @@ export function Sidebar() {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Articles']);
   const [isDark, setIsDark] = useState(false);
+  const [project, setProject] = useState<Project | null>(null);
+
+  useEffect(() => {
+    loadProject();
+  }, []);
+
+  const loadProject = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data) {
+      setProject(data);
+    }
+  };
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
@@ -58,6 +80,22 @@ export function Sidebar() {
 
   const handleSignOut = async () => {
     window.location.href = '/auth/logout';
+  };
+
+  // Get the first letter of business name for the avatar
+  const getBusinessInitial = () => {
+    if (!project?.name) return 'B';
+    return project.name.charAt(0).toUpperCase();
+  };
+
+  // Get display name (fallback to "Your Business" if not set)
+  const getBusinessName = () => {
+    return project?.name || 'Your Business';
+  };
+
+  // Get display URL (fallback to "Add website URL" if not set)
+  const getWebsiteUrl = () => {
+    return project?.website_url || 'Add website URL';
   };
 
   return (
@@ -79,20 +117,25 @@ export function Sidebar() {
       </div>
 
       {/* Project Selector */}
-      <div className="px-4 py-3 border-b border-gray-200">
-        <button className="w-full flex items-center justify-between p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center">
-              <span className="text-sm font-semibold text-white">R</span>
+      {project && (
+        <div className="px-4 py-3 border-b border-gray-200">
+          <Link
+            href="/dashboard/settings"
+            className="w-full flex items-center justify-between p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors"
+          >
+            <div className="flex items-center space-x-3 min-w-0 flex-1">
+              <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-semibold text-white">{getBusinessInitial()}</span>
+              </div>
+              <div className="text-left min-w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-900 truncate">{getBusinessName()}</p>
+                <p className="text-xs text-gray-500 truncate">{getWebsiteUrl()}</p>
+              </div>
             </div>
-            <div className="text-left">
-              <p className="text-sm font-semibold text-gray-900">Rollout AI</p>
-              <p className="text-xs text-gray-500">https://rollout.site</p>
-            </div>
-          </div>
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        </button>
-      </div>
+            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </Link>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
