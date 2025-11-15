@@ -1,0 +1,31 @@
+name: Auto-Generate Articles
+
+on:
+  schedule:
+    # Runs every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  auto-generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Auto-Generate API
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X GET https://rankpulse.vercel.app/api/cron/auto-generate-articles \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "Response Code: $http_code"
+          echo "Response Body: $body"
+
+          if [ "$http_code" != "200" ]; then
+            echo "❌ Auto-generate failed with status code $http_code"
+            exit 1
+          fi
+
+          echo "✅ Auto-generate completed successfully"
