@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
         // Get project's WordPress integration
         const { data: integration } = await supabase
-          .from('integrations')
+          .from('cms_connections')
           .select('*')
           .eq('project_id', article.project_id)
           .eq('platform', 'wordpress')
