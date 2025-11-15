@@ -14,8 +14,7 @@ import {
   CalendarDays,
   History,
   Plug,
-  Sun,
-  Moon,
+  LogOut,
 } from 'lucide-react';
 
 interface SubNavItem {
@@ -48,8 +47,8 @@ const navigation: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Articles']);
-  const [isDark, setIsDark] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
 
   useEffect(() => {
     loadProject();
@@ -58,6 +57,9 @@ export function Sidebar() {
   const loadProject = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    // Set user email
+    setUserEmail(user.email || '');
 
     const { data } = await supabase
       .from('projects')
@@ -98,22 +100,22 @@ export function Sidebar() {
     return project?.website_url || 'Add website URL';
   };
 
+  // Get user initials from email
+  const getUserInitial = () => {
+    if (!userEmail) return 'U';
+    return userEmail.charAt(0).toUpperCase();
+  };
+
   return (
     <div className="flex h-screen w-72 flex-col bg-white border-r border-gray-200">
       {/* Logo/Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
+      <div className="flex items-center px-4 py-4 border-b border-gray-200">
         <Link href="/dashboard" className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
           <span className="text-lg font-bold text-gray-900">RankPulse</span>
         </Link>
-        <button
-          onClick={() => setIsDark(!isDark)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          {isDark ? <Sun className="w-5 h-5 text-gray-600" /> : <Moon className="w-5 h-5 text-gray-600" />}
-        </button>
       </div>
 
       {/* Project Selector */}
@@ -214,22 +216,24 @@ export function Sidebar() {
 
       {/* User Section */}
       <div className="border-t border-gray-200 p-4">
-        <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+        <div className="bg-gray-50 rounded-lg p-3 space-y-3">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-white">P</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-base font-semibold text-white">{getUserInitial()}</span>
             </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-gray-900">piyush.shah2212</p>
+            <div className="text-left min-w-0 flex-1">
+              <p className="text-xs text-gray-500 mb-0.5">Signed in as</p>
+              <p className="text-sm font-medium text-gray-900 truncate">{userEmail || 'Loading...'}</p>
             </div>
           </div>
-        </button>
-        <button
-          onClick={handleSignOut}
-          className="w-full mt-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
-        >
-          Logout
-        </button>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium text-red-600 bg-white hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
+        </div>
       </div>
     </div>
   );
