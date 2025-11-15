@@ -59,8 +59,12 @@ export async function GET(request: Request) {
         // Call generate-article API
         const generateResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/generate-article`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-cron-request': 'true'  // Signal this is from cron
+          },
           body: JSON.stringify({
+            projectId: article.project_id,
             articleId: article.id,
             keyword: article.target_keyword || article.title,
             contentType: article.content_type || 'Article',

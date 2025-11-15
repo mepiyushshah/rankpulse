@@ -293,6 +293,7 @@ export default function ContentPlannerPage() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
+                projectId: projectId,
                 articleId: firstArticle.id,
                 keyword: firstArticle.target_keyword,
                 contentType: firstArticle.content_type || 'Article',

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase-server';
 import Groq from 'groq-sdk';
 import { getToolScreenshot, extractToolNames } from '@/lib/screenshot-service';
 import { findRelevantVideo, embedVideoInContent } from '@/lib/youtube-service';
@@ -10,7 +11,18 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    // Check if called from cron (has auth header) or from authenticated user
+    const authHeader = request.headers.get('x-cron-request');
+    const isCronRequest = authHeader === 'true';
+
+    // Use service role for cron, regular client for user requests
+    const supabase = isCronRequest
+      ? createSupabaseClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+      : await createServerClient();
+
     const { projectId, articleId, keyword, contentType } = await request.json();
 
     if (!projectId || !articleId || !keyword) {
