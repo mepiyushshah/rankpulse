@@ -282,37 +282,42 @@ export default function ContentPlannerPage() {
         // Get created article IDs
         const createdArticles = await articleResponse.json();
 
-        // Generate content for the FIRST article immediately (sorted by scheduled date)
+        // INSTANT FEEDBACK: Reload calendar immediately to show placeholders
+        await loadArticles();
+
+        // Generate content for the FIRST article in background (non-blocking)
         if (createdArticles.articles && createdArticles.articles.length > 0) {
-          const firstArticle = createdArticles.articles[0]; // Already sorted by scheduled_at
+          const firstArticle = createdArticles.articles[0];
 
-          try {
-            alert(`Generating content for first article: "${firstArticle.title}"...\n\nPlease wait 30-60 seconds...`);
+          // Set generating state to show spinner
+          setGeneratingArticleId(firstArticle.id);
 
-            const generateResponse = await fetch('/api/generate-article', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                projectId: projectId,
-                articleId: firstArticle.id,
-                keyword: firstArticle.target_keyword,
-                contentType: firstArticle.content_type || 'Article',
-              }),
-            });
-
-            if (generateResponse.ok) {
-              alert(`✅ Success!\n\n1st article generated: "${firstArticle.title}"\n\nRemaining ${createdArticles.articles.length - 1} articles will be generated automatically in the background.`);
-            } else {
-              alert(`⚠️ Articles added to calendar!\n\nFirst article generation failed, but all ${createdArticles.articles.length} will be auto-generated in background within next hour.`);
+          // Start generation in background - don't await
+          fetch('/api/generate-article', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              projectId: projectId,
+              articleId: firstArticle.id,
+              keyword: firstArticle.target_keyword,
+              contentType: firstArticle.content_type || 'Article',
+            }),
+          }).then(async (response) => {
+            if (response.ok) {
+              // Reload calendar to show generated article
+              await loadArticles();
             }
-          } catch (err) {
-            console.error('Error generating first article:', err);
-            alert(`✅ ${keywords.length} articles added to calendar!\n\nContent will be auto-generated in the background.`);
-          }
+          }).catch(err => {
+            console.error('Background generation error:', err);
+          }).finally(() => {
+            // Clear generating state
+            setGeneratingArticleId(null);
+          });
+
+          // Show success message immediately
+          alert(`✅ Added ${keywords.length} article(s) to calendar!\n\nFirst article is generating now...`);
         }
       }
-
-      await loadArticles(); // Reload calendar to show new articles
     } catch (error) {
       console.error('Error saving keywords:', error);
       alert('Failed to save keywords. Please try again.');
