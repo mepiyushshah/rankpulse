@@ -278,9 +278,39 @@ export default function ContentPlannerPage() {
         });
 
         if (!articleResponse.ok) throw new Error('Failed to create articles');
+
+        // Get created article IDs
+        const createdArticles = await articleResponse.json();
+
+        // Generate content for the FIRST article immediately (sorted by scheduled date)
+        if (createdArticles.articles && createdArticles.articles.length > 0) {
+          const firstArticle = createdArticles.articles[0]; // Already sorted by scheduled_at
+
+          try {
+            alert(`Generating content for first article: "${firstArticle.title}"...\n\nPlease wait 30-60 seconds...`);
+
+            const generateResponse = await fetch('/api/generate-article', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                articleId: firstArticle.id,
+                keyword: firstArticle.target_keyword,
+                contentType: firstArticle.content_type || 'Article',
+              }),
+            });
+
+            if (generateResponse.ok) {
+              alert(`✅ Success!\n\n1st article generated: "${firstArticle.title}"\n\nRemaining ${createdArticles.articles.length - 1} articles will be generated automatically in the background.`);
+            } else {
+              alert(`⚠️ Articles added to calendar!\n\nFirst article generation failed, but all ${createdArticles.articles.length} will be auto-generated in background within next hour.`);
+            }
+          } catch (err) {
+            console.error('Error generating first article:', err);
+            alert(`✅ ${keywords.length} articles added to calendar!\n\nContent will be auto-generated in the background.`);
+          }
+        }
       }
 
-      alert(`Successfully added ${keywords.length} keyword(s) to calendar!`);
       await loadArticles(); // Reload calendar to show new articles
     } catch (error) {
       console.error('Error saving keywords:', error);
