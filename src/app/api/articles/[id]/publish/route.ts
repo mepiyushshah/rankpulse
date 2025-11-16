@@ -130,6 +130,35 @@ export async function POST(
     console.log('Processing images in content...');
     htmlContent = await wpClient.processContentImages(htmlContent);
 
+    // Upload featured image to WordPress if available
+    let featuredMediaId: number | undefined;
+    if (article.featured_image_url) {
+      try {
+        console.log('Uploading featured image to WordPress...');
+        const featuredImageResponse = await fetch(article.featured_image_url);
+
+        if (featuredImageResponse.ok) {
+          const imageBuffer = Buffer.from(await featuredImageResponse.arrayBuffer());
+          const contentType = featuredImageResponse.headers.get('content-type') || 'image/png';
+
+          // Generate a clean filename
+          const filename = `featured-${article.slug || article.id}.png`;
+
+          const uploadResult = await wpClient.uploadMedia(imageBuffer, filename, contentType);
+
+          if (uploadResult.success && uploadResult.mediaId) {
+            featuredMediaId = uploadResult.mediaId;
+            console.log(`Featured image uploaded successfully: Media ID ${featuredMediaId}`);
+          } else {
+            console.warn('Featured image upload failed:', uploadResult.error);
+          }
+        }
+      } catch (error) {
+        console.error('Error uploading featured image:', error);
+        // Continue with publishing even if featured image fails
+      }
+    }
+
     // Debug: Log the content before sending
     console.log('=== CONTENT TO WORDPRESS ===');
     console.log('Length:', htmlContent.length);
@@ -144,6 +173,11 @@ export async function POST(
       excerpt: article.meta_description || '',
       status: status,
     };
+
+    // Add featured media if uploaded successfully
+    if (featuredMediaId) {
+      wpPost.featured_media = featuredMediaId;
+    }
 
     // Only add optional fields if they have valid values
     if (article.slug && typeof article.slug === 'string' && article.slug.trim()) {
