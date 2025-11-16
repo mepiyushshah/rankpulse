@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const count = numKeywords || 8;
 
     // Create AI prompt for KEYWORD generation (not article titles)
-    const prompt = `You are an expert SEO keyword researcher. Generate ${count} high-value SEO keywords for the following business:
+    const prompt = `You are an expert SEO keyword researcher specializing in BLOG CONTENT and INFORMATIONAL keywords. Generate ${count} high-value SEO keywords for the following business:
 
 **Business Context:**
 - Company: ${project.name}
@@ -50,35 +50,48 @@ ${audiences && audiences.length > 0 ? `- Target Audiences: ${audiences.join(', '
 
 **Requirements:**
 1. Generate EXACTLY ${count} SEO keywords (NOT article titles, just pure keywords/phrases)
-2. Focus on keywords that the target audience would search for
+2. Focus on INFORMATIONAL/EDUCATIONAL keywords suitable for BLOG ARTICLES
 3. Include a mix of:
    - Short-tail keywords (1-2 words, high volume, high difficulty)
    - Long-tail keywords (3-5 words, lower volume, lower difficulty)
-   - Question-based keywords (how, what, why, etc.)
-4. Keywords should be relevant to the business niche and competitors
+   - Question-based keywords (how, what, why, when, etc.)
+4. Keywords should be relevant to the business niche and target audience
 5. Provide realistic search volume and difficulty estimates
+
+**CRITICAL - EXCLUDE these keyword types (NOT suitable for blog content):**
+❌ Local intent: "near me", "in [city]", "close to me", "[location] based", "local"
+❌ Transactional: "buy", "purchase", "order", "shop", "price", "cost", "for sale"
+❌ Service requests: "hire", "get quotes", "contact", "call now", "book", "schedule"
+❌ Branded: specific company/product names (unless analyzing the business's own brand)
+
+**ONLY INCLUDE informational/educational keywords:**
+✅ How-to: "how to...", "ways to...", "steps to...", "process of..."
+✅ Questions: "what is...", "why...", "when to...", "where to learn..."
+✅ Comparisons: "vs", "compared to", "difference between", "alternatives to..."
+✅ Educational: "guide", "tutorial", "learn", "tips", "best practices", "examples"
+✅ Problem-solving: addressing pain points, solutions, troubleshooting
 
 **Output Format (JSON array):**
 Return ONLY a valid JSON array with this exact structure:
 [
   {
-    "keyword": "landing page builder",
+    "keyword": "content marketing strategy",
     "volume": 12000,
     "difficulty": 65,
-    "reason": "High commercial intent keyword relevant to your SaaS niche"
+    "reason": "Informational keyword about marketing planning"
   },
   {
-    "keyword": "how to create landing pages",
+    "keyword": "how to create content calendar",
     "volume": 3400,
     "difficulty": 42,
-    "reason": "Long-tail how-to keyword with lower competition"
+    "reason": "How-to keyword with educational intent"
   }
 ]
 
 **Important:**
-- Each "keyword" must be a SEARCHABLE PHRASE, not an article title
-- Do NOT include words like "Best", "Top", "Guide to" in the keyword itself
-- Keywords should be what users type into Google search
+- Each "keyword" must be a SEARCHABLE PHRASE suitable for a blog article
+- Do NOT include local, transactional, or service request keywords
+- Keywords should be what users type when seeking INFORMATION or EDUCATION
 - Return ONLY the JSON array, no other text`;
 
     // Call AI to generate keywords

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: 'system',
-          content: `You are an SEO keyword research expert. Generate related keyword suggestions based on the seed keyword provided.
+          content: `You are an SEO keyword research expert specializing in BLOG CONTENT and INFORMATIONAL keywords. Generate related keyword suggestions based on the seed keyword provided.
 
 Return ONLY a valid JSON array with this exact structure, no additional text:
 [
@@ -30,11 +30,24 @@ Return ONLY a valid JSON array with this exact structure, no additional text:
 ]
 
 Rules:
-- Generate EXACTLY 7 highly relevant keyword variations
+- Generate EXACTLY 7 highly relevant keyword variations FOR BLOG ARTICLES
 - Include long-tail variations and related terms
 - Volume should be realistic estimates (100-50000 range)
 - Difficulty score: 0-30 (easy), 31-60 (medium), 61-100 (hard)
-- Return ONLY the JSON array, no markdown formatting or explanation`,
+- Return ONLY the JSON array, no markdown formatting or explanation
+
+IMPORTANT - EXCLUDE these types of keywords (NOT suitable for blog content):
+❌ Local intent keywords: "near me", "in [city]", "close to me", "[location] based"
+❌ Transactional keywords: "buy", "purchase", "order", "shop", "price"
+❌ Service request keywords: "hire", "get quotes", "contact", "call now"
+❌ Branded keywords: specific company/product names (unless seed keyword is a brand)
+
+ONLY INCLUDE informational/educational keywords suitable for blog articles:
+✅ How-to keywords: "how to...", "ways to...", "steps to..."
+✅ Question keywords: "what is...", "why...", "when to..."
+✅ Comparison keywords: "vs", "compared to", "difference between"
+✅ Guide keywords: "guide", "tutorial", "learn", "tips"
+✅ Problem-solution keywords: addressing pain points and solutions`,
         },
         {
           role: 'user',
