@@ -396,44 +396,38 @@ export function GenerateContentModal({
           </div>
 
           {/* Keywords Grid */}
-          <div className="max-h-[450px] overflow-y-auto pr-2 space-y-3">
+          <div className="max-h-[450px] overflow-y-auto pr-2 space-y-2">
             {generatedKeywords.map((kw, index) => (
               <label
                 key={index}
                 className={`
-                  block p-4 border rounded-lg cursor-pointer transition-all group
+                  block p-3 border rounded-lg cursor-pointer transition-all
                   ${selectedKeywordIndices.has(index)
                     ? 'border-[#00AA45] bg-green-50'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                   }
                 `}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2.5">
                   {/* Checkbox */}
                   <input
                     type="checkbox"
                     checked={selectedKeywordIndices.has(index)}
                     onChange={() => toggleKeywordSelection(index)}
-                    className="mt-0.5 h-5 w-5 text-[#00AA45] rounded border-gray-300 focus:ring-[#00AA45]"
+                    className="mt-0.5 h-4 w-4 text-[#00AA45] rounded border-gray-300 focus:ring-[#00AA45]"
                   />
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    {/* Keyword Title */}
-                    <h4 className="font-semibold text-gray-900 mb-1.5">{kw.keyword}</h4>
-
-                    {/* Metrics */}
-                    <div className="flex items-center gap-4 mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500">Volume:</span>
-                        <span className="text-sm font-semibold text-gray-900">
+                    {/* Keyword Title & Metrics */}
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h4 className="font-semibold text-sm text-gray-900">{kw.keyword}</h4>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-gray-600">
                           {kw.volume >= 1000 ? `${(kw.volume / 1000).toFixed(1)}K` : kw.volume}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500">Difficulty:</span>
                         <span className={`
-                          text-sm font-semibold px-2 py-0.5 rounded
+                          text-xs font-medium px-1.5 py-0.5 rounded
                           ${kw.difficulty < 30 ? 'bg-green-100 text-green-700' :
                             kw.difficulty < 60 ? 'bg-yellow-100 text-yellow-700' :
                             'bg-red-100 text-red-700'}
@@ -444,7 +438,7 @@ export function GenerateContentModal({
                     </div>
 
                     {/* Reason */}
-                    <p className="text-xs text-gray-600 leading-relaxed">{kw.reason}</p>
+                    <p className="text-xs text-gray-600">{kw.reason}</p>
                   </div>
                 </div>
               </label>
