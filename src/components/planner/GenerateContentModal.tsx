@@ -372,57 +372,87 @@ export function GenerateContentModal({
       </div>
       ) : (
         /* Preview Step */
-        <div className="space-y-4">
-          {/* Header Actions */}
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-600">
-              {selectedKeywordIndices.size} of {generatedKeywords.length} keywords selected
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={selectAllKeywords}>
-                Select All
-              </Button>
-              <Button variant="outline" size="sm" onClick={deselectAllKeywords}>
-                Deselect All
-              </Button>
+        <div className="space-y-5">
+          {/* Header Stats */}
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {selectedKeywordIndices.size} of {generatedKeywords.length} keywords selected
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Select keywords to add to your content calendar
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={selectAllKeywords}>
+                  Select All
+                </Button>
+                <Button variant="outline" size="sm" onClick={deselectAllKeywords}>
+                  Deselect All
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Keywords List */}
-          <div className="max-h-[500px] overflow-y-auto space-y-2">
+          {/* Keywords Grid */}
+          <div className="max-h-[450px] overflow-y-auto pr-2 space-y-3">
             {generatedKeywords.map((kw, index) => (
               <label
                 key={index}
                 className={`
-                  flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all
-                  ${selectedKeywordIndices.has(index) ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'}
+                  block p-4 border rounded-lg cursor-pointer transition-all group
+                  ${selectedKeywordIndices.has(index)
+                    ? 'border-[#00AA45] bg-green-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }
                 `}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedKeywordIndices.has(index)}
-                  onChange={() => toggleKeywordSelection(index)}
-                  className="mt-1 h-5 w-5 text-primary rounded border-gray-300"
-                />
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-semibold text-gray-900">{kw.keyword}</h4>
-                    <div className="flex gap-3 text-sm">
-                      <span className="text-gray-600">Vol: <strong>{kw.volume >= 1000 ? `${(kw.volume / 1000).toFixed(1)}K` : kw.volume}</strong></span>
-                      <span className="text-gray-600">Diff: <strong className={
-                        kw.difficulty < 30 ? 'text-green-600' :
-                        kw.difficulty < 60 ? 'text-yellow-600' : 'text-red-600'
-                      }>{kw.difficulty}</strong></span>
+                <div className="flex items-start gap-3">
+                  {/* Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={selectedKeywordIndices.has(index)}
+                    onChange={() => toggleKeywordSelection(index)}
+                    className="mt-0.5 h-5 w-5 text-[#00AA45] rounded border-gray-300 focus:ring-[#00AA45]"
+                  />
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Keyword Title */}
+                    <h4 className="font-semibold text-gray-900 mb-1.5">{kw.keyword}</h4>
+
+                    {/* Metrics */}
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">Volume:</span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {kw.volume >= 1000 ? `${(kw.volume / 1000).toFixed(1)}K` : kw.volume}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">Difficulty:</span>
+                        <span className={`
+                          text-sm font-semibold px-2 py-0.5 rounded
+                          ${kw.difficulty < 30 ? 'bg-green-100 text-green-700' :
+                            kw.difficulty < 60 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'}
+                        `}>
+                          {kw.difficulty}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* Reason */}
+                    <p className="text-xs text-gray-600 leading-relaxed">{kw.reason}</p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{kw.reason}</p>
                 </div>
               </label>
             ))}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between gap-3 pt-4 border-t">
+          <div className="flex justify-between gap-3 pt-4 border-t border-gray-200">
             <Button variant="outline" onClick={() => setStep('configure')} size="md">
               Back
             </Button>
