@@ -151,6 +151,17 @@ export default function SettingsPage() {
       if (error) throw error;
 
       setSaveStatus('success');
+
+      // Show suggestion to auto-configure article settings if they have audience data
+      if (audienceData.targetAudiences.length > 0 || audienceData.competitors.length > 0) {
+        setTimeout(() => {
+          if (confirm('✨ Great! Your audience data is saved.\n\nWould you like AI to automatically configure your article settings based on this information?\n\n(You can always do this later from Article Preferences → AI Configuration)')) {
+            // Redirect to article settings with auto-configure
+            window.location.href = '/dashboard/articles/settings?autoConfig=true';
+          }
+        }, 1000);
+      }
+
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error: any) {
       setSaveStatus('error');

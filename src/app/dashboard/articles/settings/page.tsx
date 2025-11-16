@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Settings, Sparkles, Target, Calendar, Zap, ChevronRight, Save, RotateCcw, Image, Link2 } from 'lucide-react'
+import { Settings, Sparkles, Zap, Save, RotateCcw, Info, Eye, Lock, Unlock, CheckCircle2, Loader2, Image } from 'lucide-react'
 import SitemapSettings from '@/components/settings/SitemapSettings'
+import confetti from 'canvas-confetti'
 
 export default function ArticlesSettingsPage() {
-  const [activeTab, setActiveTab] = useState('content')
+  const [activeTab, setActiveTab] = useState('automation')
 
   const [settings, setSettings] = useState({
-    // Content & AI Settings
+    // Content & AI Settings (AI-configured)
     brandVoice: 'professional',
     toneAttributes: ['informative', 'engaging'],
     writingPerspective: 'first_person',
@@ -19,7 +20,7 @@ export default function ArticlesSettingsPage() {
     temperature: 0.7,
     customInstructions: '',
 
-    // SEO Settings
+    // SEO Settings (always optimal)
     keywordDensityMin: 1.5,
     keywordDensityMax: 2.5,
     autoGenerateMeta: true,
@@ -28,20 +29,20 @@ export default function ArticlesSettingsPage() {
     maxInternalLinks: 7,
     enableSchemaMarkup: true,
 
-    // Structure Settings
+    // Structure Settings (AI-configured)
     includeSections: ['introduction', 'key_takeaways', 'main_content', 'faq', 'conclusion'],
     headingStructure: 'hierarchical',
     includeElements: ['bullets', 'lists', 'blockquotes'],
 
-    // Automation Settings
+    // Automation Settings (USER CONTROLS THESE)
     autoGenerate: false,
     articlesPerWeek: 3,
-    preferredDays: [1, 3, 5], // Mon, Wed, Fri
+    preferredDays: [1, 3, 5],
     publishTime: '09:00',
     autoPublish: false,
     generateAheadDays: 14,
 
-    // Content Mix
+    // Content Mix (AI-configured)
     contentMix: {
       how_to: 30,
       listicle: 25,
@@ -56,13 +57,13 @@ export default function ArticlesSettingsPage() {
       hard: 20
     },
 
-    // Quality Control
+    // Quality Control (always on)
     enableGrammarCheck: true,
     enablePlagiarismCheck: true,
     targetReadabilityScore: 60,
     autoFixIssues: false,
 
-    // Featured Images
+    // Featured Images (AI-configured)
     featuredImageStyle: 'gradient_modern',
     featuredImagePrimaryColor: '#00AA45',
     featuredImageSecondaryColor: '#008837',
@@ -76,6 +77,11 @@ export default function ArticlesSettingsPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [isLoading, setIsLoading] = useState(true)
   const [projectId, setProjectId] = useState<string | null>(null)
+  const [isAutoConfiguring, setIsAutoConfiguring] = useState(false)
+  const [autoConfigStatus, setAutoConfigStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [aiReasoning, setAiReasoning] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(true)
+  const [advancedUnlocked, setAdvancedUnlocked] = useState(false)
 
   // Load settings on mount
   useEffect(() => {
@@ -95,6 +101,10 @@ export default function ArticlesSettingsPage() {
 
         const projectId = projects[0].id
         setProjectId(projectId)
+
+        // Check if auto-configure was requested via URL parameter
+        const urlParams = new URLSearchParams(window.location.search)
+        const shouldAutoConfig = urlParams.get('autoConfig') === 'true'
 
         // Fetch saved settings
         const response = await fetch(`/api/article-settings?projectId=${projectId}`)
@@ -155,6 +165,18 @@ export default function ArticlesSettingsPage() {
             featuredImageIncludeLogo: dbSettings.featured_image_include_logo ?? false,
           })
         }
+
+        // If auto-configure was requested, trigger it after loading
+        if (shouldAutoConfig) {
+          // Switch to AI config tab
+          setActiveTab('ai_config')
+          // Clean up URL
+          window.history.replaceState({}, '', window.location.pathname)
+          // Auto-trigger configuration after a brief delay
+          setTimeout(() => {
+            handleAutoConfiguration()
+          }, 500)
+        }
       } catch (error) {
         console.error('Error loading settings:', error)
       } finally {
@@ -166,38 +188,10 @@ export default function ArticlesSettingsPage() {
   }, [])
 
   const tabs = [
-    { id: 'content', label: 'Content & AI', icon: Sparkles },
-    { id: 'seo', label: 'SEO & Optimization', icon: Target },
-    { id: 'sitemap', label: 'Sitemap & Links', icon: Link2 },
     { id: 'automation', label: 'Automation', icon: Zap },
-    { id: 'structure', label: 'Structure', icon: Settings },
+    { id: 'ai_config', label: 'AI Configuration', icon: Sparkles },
     { id: 'featured_images', label: 'Featured Images', icon: Image },
   ]
-
-  const brandVoices = [
-    { value: 'professional', label: 'Professional', desc: 'Formal and authoritative tone' },
-    { value: 'casual', label: 'Casual', desc: 'Friendly and conversational' },
-    { value: 'technical', label: 'Technical', desc: 'Detailed and precise' },
-    { value: 'conversational', label: 'Conversational', desc: 'Personal and engaging' },
-  ]
-
-  const toneOptions = [
-    { value: 'informative', label: 'Informative' },
-    { value: 'engaging', label: 'Engaging' },
-    { value: 'humorous', label: 'Humorous' },
-    { value: 'authoritative', label: 'Authoritative' },
-    { value: 'friendly', label: 'Friendly' },
-    { value: 'inspiring', label: 'Inspiring' },
-  ]
-
-  const toggleTone = (tone: string) => {
-    setSettings(prev => ({
-      ...prev,
-      toneAttributes: prev.toneAttributes.includes(tone)
-        ? prev.toneAttributes.filter(t => t !== tone)
-        : [...prev.toneAttributes, tone]
-    }))
-  }
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -221,7 +215,7 @@ export default function ArticlesSettingsPage() {
 
       const projectId = projects[0].id
 
-      // Save settings (we'll create the API route next)
+      // Save settings
       const response = await fetch('/api/article-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -238,6 +232,50 @@ export default function ArticlesSettingsPage() {
       setTimeout(() => setSaveStatus('idle'), 3000)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleAutoConfiguration = async () => {
+    if (!projectId) return
+
+    setIsAutoConfiguring(true)
+    setAutoConfigStatus('idle')
+    setAiReasoning('')
+
+    try {
+      const response = await fetch('/api/auto-configure-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId })
+      })
+
+      if (!response.ok) throw new Error('Failed to auto-configure')
+
+      const data = await response.json()
+
+      // Update settings with AI recommendations
+      setSettings(prev => ({
+        ...prev,
+        ...data.settings
+      }))
+
+      setAiReasoning(data.reasoning || 'Settings configured based on your business analysis')
+      setAutoConfigStatus('success')
+
+      // Fire confetti! 🎉
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      })
+
+      setTimeout(() => setAutoConfigStatus('idle'), 5000)
+    } catch (error) {
+      console.error('Error auto-configuring:', error)
+      setAutoConfigStatus('error')
+      setTimeout(() => setAutoConfigStatus('idle'), 3000)
+    } finally {
+      setIsAutoConfiguring(false)
     }
   }
 
@@ -265,7 +303,7 @@ export default function ArticlesSettingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Article Preferences</h1>
           <p className="text-sm text-gray-500">
-            Configure how AI generates your content - quality, style, SEO, and automation settings
+            AI automatically optimizes content settings - you control when and how articles are published
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -289,13 +327,21 @@ export default function ArticlesSettingsPage() {
 
       {/* Save Status */}
       {saveStatus === 'success' && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-          ✓ Settings saved successfully!
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4" />
+          Settings saved successfully!
         </div>
       )}
       {saveStatus === 'error' && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          ✗ Failed to save settings. Please try again.
+          Failed to save settings. Please try again.
+        </div>
+      )}
+
+      {/* Auto-config Error Status only */}
+      {autoConfigStatus === 'error' && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          Failed to auto-configure settings. Please try again.
         </div>
       )}
 
@@ -322,199 +368,6 @@ export default function ArticlesSettingsPage() {
 
       {/* Tab Content */}
       <div className="space-y-4">
-        {/* Content & AI Tab */}
-        {activeTab === 'content' && (
-          <div className="space-y-4">
-            {/* Brand Voice */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#00AA45]" />
-                Brand Voice & Tone
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                {brandVoices.map((voice) => (
-                  <button
-                    key={voice.value}
-                    onClick={() => setSettings({ ...settings, brandVoice: voice.value })}
-                    className={`p-3 rounded-lg border text-left transition-all ${
-                      settings.brandVoice === voice.value
-                        ? 'border-[#00AA45] bg-green-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="text-sm font-medium text-gray-900">{voice.label}</div>
-                    <div className="text-xs text-gray-600 mt-0.5">{voice.desc}</div>
-                  </button>
-                ))}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tone Attributes (Select multiple)
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {toneOptions.map((tone) => (
-                    <button
-                      key={tone.value}
-                      onClick={() => toggleTone(tone.value)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                        settings.toneAttributes.includes(tone.value)
-                          ? 'bg-[#00AA45] text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {tone.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Writing Style */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Writing Style</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Writing Perspective
-                  </label>
-                  <select
-                    value={settings.writingPerspective}
-                    onChange={(e) => setSettings({ ...settings, writingPerspective: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent appearance-none bg-white"
-                    style={{
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
-                      backgroundPosition: 'right 0.5rem center',
-                      backgroundRepeat: 'no-repeat',
-                      backgroundSize: '1.5em 1.5em',
-                      paddingRight: '2.5rem',
-                    }}
-                  >
-                    <option value="first_person">First Person (We/I)</option>
-                    <option value="second_person">Second Person (You)</option>
-                    <option value="third_person">Third Person (They/It)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Word Count Range
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <input
-                        type="number"
-                        value={settings.minWordCount}
-                        onChange={(e) => setSettings({ ...settings, minWordCount: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                        placeholder="Min"
-                      />
-                      <span className="text-xs text-gray-500 mt-1 block">Minimum words</span>
-                    </div>
-                    <div>
-                      <input
-                        type="number"
-                        value={settings.maxWordCount}
-                        onChange={(e) => setSettings({ ...settings, maxWordCount: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                        placeholder="Max"
-                      />
-                      <span className="text-xs text-gray-500 mt-1 block">Maximum words</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Custom Instructions (Optional)
-                  </label>
-                  <textarea
-                    value={settings.customInstructions}
-                    onChange={(e) => setSettings({ ...settings, customInstructions: e.target.value })}
-                    rows={4}
-                    placeholder="e.g., Always include practical examples, Cite sources when making claims, Use active voice..."
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    These instructions will be applied to every article generated
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Sitemap & Links Tab */}
-        {activeTab === 'sitemap' && projectId && (
-          <div className="space-y-4">
-            <SitemapSettings projectId={projectId} />
-          </div>
-        )}
-
-        {/* SEO & Optimization Tab */}
-        {activeTab === 'seo' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Target className="w-4 h-4 text-[#00AA45]" />
-                SEO Optimization
-              </h3>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Auto-generate Meta Description</div>
-                    <div className="text-xs text-gray-600 mt-0.5">AI creates SEO-optimized meta descriptions</div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.autoGenerateMeta}
-                      onChange={(e) => setSettings({ ...settings, autoGenerateMeta: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00AA45] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00AA45]"></div>
-                  </label>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Automatic Internal Links</div>
-                    <div className="text-xs text-gray-600 mt-0.5">AI suggests links to related articles</div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.autoInternalLinks}
-                      onChange={(e) => setSettings({ ...settings, autoInternalLinks: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00AA45] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00AA45]"></div>
-                  </label>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Enable Schema Markup</div>
-                    <div className="text-xs text-gray-600 mt-0.5">Add structured data for better SEO</div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.enableSchemaMarkup}
-                      onChange={(e) => setSettings({ ...settings, enableSchemaMarkup: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00AA45] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00AA45]"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Automation Tab */}
         {activeTab === 'automation' && (
           <div className="space-y-4">
@@ -528,7 +381,7 @@ export default function ArticlesSettingsPage() {
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div>
                     <div className="text-sm font-medium text-gray-900">Enable Auto-Generation</div>
-                    <div className="text-xs text-gray-600 mt-0.5">Automatically generate and schedule articles</div>
+                    <div className="text-xs text-gray-600 mt-0.5">Automatically generate and schedule articles based on your content calendar</div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -542,7 +395,7 @@ export default function ArticlesSettingsPage() {
                 </div>
 
                 {settings.autoGenerate && (
-                  <div className="space-y-4 pl-3">
+                  <div className="space-y-4 pl-3 border-l-2 border-green-200">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Publish Time
@@ -551,7 +404,7 @@ export default function ArticlesSettingsPage() {
                         type="time"
                         value={settings.publishTime}
                         onChange={(e) => setSettings({ ...settings, publishTime: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Articles will be published daily at this time for scheduled dates
@@ -578,199 +431,269 @@ export default function ArticlesSettingsPage() {
               </div>
             </div>
 
-            {/* Content Mix Strategy */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-2">Content Type Distribution</h3>
-              <p className="text-xs text-gray-600 mb-3">Set the percentage of each content type in your calendar</p>
-
-              <div className="space-y-3">
-                {Object.entries(settings.contentMix).map(([type, value]) => (
-                  <div key={type}>
-                    <div className="flex justify-between mb-1.5">
-                      <label className="text-sm font-medium text-gray-700 capitalize">
-                        {type.replace('_', '-')}: {value}%
-                      </label>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="50"
-                      step="5"
-                      value={value}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        contentMix: { ...settings.contentMix, [type]: parseInt(e.target.value) }
-                      })}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#00AA45]"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-3 p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
-                Total: {Object.values(settings.contentMix).reduce((a, b) => a + b, 0)}%
-                {Object.values(settings.contentMix).reduce((a, b) => a + b, 0) !== 100 && ' (Should equal 100%)'}
-              </div>
-            </div>
-
-            {/* Difficulty Distribution */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Keyword Difficulty Balance</h3>
-
-              <div className="space-y-3">
-                {Object.entries(settings.difficultyDistribution).map(([level, value]) => (
-                  <div key={level}>
-                    <div className="flex justify-between mb-1.5">
-                      <label className="text-sm font-medium text-gray-700 capitalize flex items-center gap-2">
-                        {level === 'easy' && <span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span>}
-                        {level === 'medium' && <span className="w-2.5 h-2.5 bg-yellow-500 rounded-full"></span>}
-                        {level === 'hard' && <span className="w-2.5 h-2.5 bg-red-500 rounded-full"></span>}
-                        {level} (0-{level === 'easy' ? '30' : level === 'medium' ? '60' : '100'}): {value}%
-                      </label>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="10"
-                      value={value}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        difficultyDistribution: { ...settings.difficultyDistribution, [level]: parseInt(e.target.value) }
-                      })}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#00AA45]"
-                    />
-                  </div>
-                ))}
+            {/* Info Box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">How Auto-Generation Works</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• Articles are generated based on your content calendar schedule</li>
+                    <li>• AI uses your business details and audience data to create relevant content</li>
+                    <li>• All content follows SEO best practices automatically</li>
+                    <li>• You can review and edit articles before they publish</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Structure Tab */}
-        {activeTab === 'structure' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Settings className="w-4 h-4 text-[#00AA45]" />
-                Article Structure
-              </h3>
+        {/* AI Configuration Tab */}
+        {activeTab === 'ai_config' && (
+          <div className="space-y-6">
+            {/* How It Works - Trust Building Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-[#00AA45] rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">How AI Configuration Works</h3>
+              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Required Sections (in order)
-                  </label>
-                  <div className="space-y-2">
-                    {[
-                      { value: 'introduction', label: 'Introduction' },
-                      { value: 'key_takeaways', label: 'Key Takeaways Box' },
-                      { value: 'main_content', label: 'Main Content' },
-                      { value: 'faq', label: 'FAQ Section' },
-                      { value: 'conclusion', label: 'Conclusion with CTA' },
-                    ].map((section) => (
-                      <label key={section.value} className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer border border-gray-200">
-                        <input
-                          type="checkbox"
-                          checked={settings.includeSections.includes(section.value)}
-                          onChange={(e) => {
-                            const sections = e.target.checked
-                              ? [...settings.includeSections, section.value]
-                              : settings.includeSections.filter(s => s !== section.value)
-                            setSettings({ ...settings, includeSections: sections })
-                          }}
-                          className="w-4 h-4 text-[#00AA45] rounded accent-[#00AA45]"
-                        />
-                        <span className="text-sm font-medium text-gray-900">{section.label}</span>
-                      </label>
-                    ))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-[#00AA45] transition-all">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
+                      <span className="text-base font-bold text-[#00AA45]">1</span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900">Deep Business Analysis</h4>
                   </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    Examines your business description, target audience demographics, and competitor strategies to understand your market position
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Heading Structure
-                  </label>
-                  <select
-                    value={settings.headingStructure}
-                    onChange={(e) => setSettings({ ...settings, headingStructure: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg appearance-none bg-white"
-                    style={{
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
-                      backgroundPosition: 'right 0.5rem center',
-                      backgroundRepeat: 'no-repeat',
-                      backgroundSize: '1.5em 1.5em',
-                      paddingRight: '2.5rem',
-                    }}
-                  >
-                    <option value="hierarchical">Hierarchical (H2 → H3 → H4)</option>
-                    <option value="flat">Flat (H2 only)</option>
-                  </select>
+                <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-[#00AA45] transition-all">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
+                      <span className="text-base font-bold text-[#00AA45]">2</span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900">Smart Optimization</h4>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    Determines optimal brand voice, writing style, content types, and keyword difficulty balance based on your industry and goals
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Include Elements
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { value: 'bullets', label: 'Bullet Points' },
-                      { value: 'lists', label: 'Numbered Lists' },
-                      { value: 'blockquotes', label: 'Blockquotes' },
-                      { value: 'code', label: 'Code Snippets' },
-                      { value: 'tables', label: 'Tables' },
-                      { value: 'internal_links', label: 'Internal Links' },
-                    ].map((element) => (
-                      <label key={element.value} className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer border border-gray-200">
-                        <input
-                          type="checkbox"
-                          checked={settings.includeElements.includes(element.value)}
-                          onChange={(e) => {
-                            const elements = e.target.checked
-                              ? [...settings.includeElements, element.value]
-                              : settings.includeElements.filter(el => el !== element.value)
-                            setSettings({ ...settings, includeElements: elements })
-                          }}
-                          className="w-4 h-4 text-[#00AA45] rounded accent-[#00AA45]"
-                        />
-                        <span className="text-xs text-gray-900">{element.label}</span>
-                      </label>
-                    ))}
+                <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-[#00AA45] transition-all">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
+                      <span className="text-base font-bold text-[#00AA45]">3</span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900">SEO Best Practices</h4>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rich Media & Visual Elements
-                  </label>
-                  <p className="text-xs text-gray-600 mb-2">Automatically include relevant media to enhance article engagement</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { value: 'youtube_videos', label: 'YouTube Videos', desc: 'Auto-embed relevant videos' },
-                      { value: 'stats_boxes', label: 'Statistics Boxes', desc: 'Highlighted key numbers' },
-                      { value: 'expert_quotes', label: 'Expert Quotes', desc: 'Relevant testimonials' },
-                    ].map((element) => (
-                      <label key={element.value} className="flex items-start gap-2 p-2.5 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer border border-gray-200">
-                        <input
-                          type="checkbox"
-                          checked={settings.includeElements.includes(element.value)}
-                          onChange={(e) => {
-                            const elements = e.target.checked
-                              ? [...settings.includeElements, element.value]
-                              : settings.includeElements.filter(el => el !== element.value)
-                            setSettings({ ...settings, includeElements: elements })
-                          }}
-                          className="w-4 h-4 text-[#00AA45] rounded accent-[#00AA45] mt-0.5"
-                        />
-                        <div>
-                          <div className="text-xs font-medium text-gray-900">{element.label}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{element.desc}</div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    Applies proven SEO strategies including optimal article length, keyword density, and content structure for maximum rankings
+                  </p>
                 </div>
               </div>
+
+              <div className="mt-5 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-blue-800">
+                    <span className="font-semibold">100% Transparent:</span> All AI decisions are explained and can be manually overridden if needed. You're always in control.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Current AI Configuration */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">Your Current AI Configuration</h3>
+                  <p className="text-xs text-gray-500">These settings are optimized for your business</p>
+                </div>
+                <button
+                  onClick={handleAutoConfiguration}
+                  disabled={isAutoConfiguring || !projectId}
+                  className="px-4 py-2 bg-[#00AA45] text-white rounded-lg hover:bg-[#008837] transition-all flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+                >
+                  {isAutoConfiguring ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Re-Configure
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Brand Voice */}
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+                      <Sparkles className="w-4 h-4 text-[#00AA45]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Brand Voice</div>
+                      <div className="text-sm font-semibold text-gray-900 capitalize">{settings.brandVoice}</div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {settings.brandVoice === 'professional' && 'Formal and authoritative tone for credibility'}
+                    {settings.brandVoice === 'casual' && 'Friendly and conversational for relatability'}
+                    {settings.brandVoice === 'technical' && 'Detailed and precise for expert audiences'}
+                    {settings.brandVoice === 'conversational' && 'Personal and engaging for connection'}
+                  </p>
+                </div>
+
+                {/* Tone Attributes */}
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+                      <Settings className="w-4 h-4 text-[#00AA45]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Tone Attributes</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {settings.toneAttributes.map((tone) => (
+                          <span key={tone} className="px-2 py-0.5 bg-[#00AA45] text-white text-xs rounded capitalize">
+                            {tone}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600">Balanced approach to engage your target audience</p>
+                </div>
+
+                {/* Writing Perspective */}
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+                      <Eye className="w-4 h-4 text-[#00AA45]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Writing Perspective</div>
+                      <div className="text-sm font-semibold text-gray-900 capitalize">{settings.writingPerspective.replace('_', ' ')}</div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {settings.writingPerspective === 'first_person' && 'Uses "we/I" for personal connection'}
+                    {settings.writingPerspective === 'second_person' && 'Uses "you" for direct engagement'}
+                    {settings.writingPerspective === 'third_person' && 'Uses "they/it" for objectivity'}
+                  </p>
+                </div>
+
+                {/* Word Count */}
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+                      <Info className="w-4 h-4 text-[#00AA45]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Article Length</div>
+                      <div className="text-sm font-semibold text-gray-900">{settings.minWordCount} - {settings.maxWordCount} words</div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600">Optimized for SEO and reader engagement</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Advanced Customization */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">Advanced Customization</h3>
+                  <p className="text-xs text-gray-500">Override AI settings with manual controls (optional)</p>
+                </div>
+                <button
+                  onClick={() => setAdvancedUnlocked(!advancedUnlocked)}
+                  className={`px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 transition-all font-medium ${
+                    advancedUnlocked
+                      ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                      : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                  }`}
+                >
+                  {advancedUnlocked ? (
+                    <>
+                      <Unlock className="w-3.5 h-3.5" />
+                      Unlocked
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      Unlock
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {advancedUnlocked && (
+                <div className="space-y-4">
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-xs text-yellow-800 flex items-start gap-2">
+                      <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>Manual changes will override AI recommendations. We recommend using "Re-Configure" to restore optimal settings.</span>
+                    </p>
+                  </div>
+
+                  {/* Custom Instructions */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Custom Instructions (Optional)
+                    </label>
+                    <textarea
+                      value={settings.customInstructions}
+                      onChange={(e) => setSettings({ ...settings, customInstructions: e.target.value })}
+                      rows={4}
+                      placeholder="e.g., Always include practical examples, Cite sources when making claims, Use active voice..."
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      These instructions will be applied to every article generated
+                    </p>
+                  </div>
+
+                  {/* Word Count Override */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Word Count Range (Override)
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <input
+                          type="number"
+                          value={settings.minWordCount}
+                          onChange={(e) => setSettings({ ...settings, minWordCount: parseInt(e.target.value) })}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                          placeholder="Min"
+                        />
+                        <span className="text-xs text-gray-500 mt-1 block">Minimum words</span>
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          value={settings.maxWordCount}
+                          onChange={(e) => setSettings({ ...settings, maxWordCount: parseInt(e.target.value) })}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00AA45] focus:border-transparent"
+                          placeholder="Max"
+                        />
+                        <span className="text-xs text-gray-500 mt-1 block">Maximum words</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
